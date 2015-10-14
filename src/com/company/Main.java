@@ -1,6 +1,11 @@
 package com.company;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Scanner;
 
 public class Main {
 
@@ -9,7 +14,9 @@ public class Main {
     static ArrayList<ArrayList<Integer>> levaLegenda;
     static ArrayList<ArrayList<Integer>> velikostiMezer;
 
-    static Integer ZmenenyRadek=0;
+    static HashSet<Integer> Tabu = new HashSet<>();
+
+    static Integer ZmenenyRadek = 0;
     static ArrayList<Integer> lepsiMezery;
 
     static boolean[][] tajenka;
@@ -25,82 +32,48 @@ public class Main {
         for (int i = 0; i < vyska; i++) {
             printRadek(i, velikostiMezer.get(i));
         }
-
     }
+
 
     public static void printRadek(int i, ArrayList<Integer> Mezery) {
 
         ArrayList<Integer> policka = levaLegenda.get(i);
-        System.out.print( i + "");
+        System.out.print(i + "");
 
-        if(policka.size() +1 != Mezery.size() ){
-
-            System.out.println("*alert policek a mezer" + policka.size() +","+ Mezery.size());
-
+        if (policka.size() + 1 != Mezery.size()) {
+            System.out.println("*alert policek a mezer" + policka.size() + "," + Mezery.size());
         }
 
         for (int j = 0; j < Mezery.get(0); j++) {
-            System.out.print(" ");
+            System.out.print("  ");
         }
 
         for (int j = 0; j < policka.size(); j++) {
 
             // vytisknu jedno policko
             for (int k = 0; k < policka.get(j); k++) {
-                System.out.print("#");
+                System.out.print("##");
             }
 
             for (int k = 0; k < Mezery.get(j + 1); k++) {
-                System.out.print(" ");
+                System.out.print("  ");
             }
-
         }
 
         System.out.print("|");
         System.out.println();
-
     }
 
     public static void initializeVariables() {
 
-        horniLegenda = new ArrayList<>(sirka);
-        levaLegenda = new ArrayList<>(vyska);
-        velikostiMezer = new ArrayList<>(vyska);
-
+        sirka = horniLegenda.size();
+        vyska = levaLegenda.size();
         tajenka = new boolean[vyska][sirka];
-
-        for (int i = 0; i < sirka; i++) {
-            horniLegenda.add(new ArrayList<Integer>());
-        }
-
-        for (int i = 0; i < vyska; i++) {
-            levaLegenda.add(new ArrayList<Integer>());
-        }
+        velikostiMezer = new ArrayList<>(vyska);
 
         for (int i = 0; i < vyska; i++) {
             velikostiMezer.add(new ArrayList<Integer>());
         }
-
-        horniLegenda.get(0).add(1);
-        horniLegenda.get(0).add(1);
-        horniLegenda.get(1).add(1);
-        horniLegenda.get(1).add(2);
-        horniLegenda.get(2).add(3);
-        horniLegenda.get(2).add(1);
-        horniLegenda.get(3).add(2);
-        horniLegenda.get(3).add(1);
-        horniLegenda.get(4).add(1);
-        horniLegenda.get(4).add(1);
-
-        levaLegenda.get(0).add(1);
-        levaLegenda.get(0).add(1);
-        levaLegenda.get(1).add(3);
-        levaLegenda.get(2).add(1);
-        levaLegenda.get(2).add(2);
-        levaLegenda.get(3).add(1);
-        levaLegenda.get(3).add(1);
-        levaLegenda.get(4).add(4);
-
     }
 
     // Vyplni mezery, mezery 1 a vycentrovana doprostred
@@ -108,9 +81,9 @@ public class Main {
 
         ArrayList<Integer> VelikostiPoli;
         ArrayList<Integer> Mezery;
+        int velikost;
 
         for (int i = 0; i < vyska; i++) { // i je radek
-
 
             VelikostiPoli = levaLegenda.get(i);
             Mezery = velikostiMezer.get(i);
@@ -118,30 +91,24 @@ public class Main {
             if (VelikostiPoli.isEmpty()) { // nebo 1? Nejspis nikdy nenastane
                 Mezery.add(sirka);
             } else {
+                velikost = 0;
 
-                int velikost = 0;
-
-                for (int j = 0; j < VelikostiPoli.size(); j++) { //j je poradi cisla v radku
-                    velikost += VelikostiPoli.get(j);
+                for (Integer aVelikostiPoli : VelikostiPoli) { //j je poradi cisla v radku
+                    velikost += aVelikostiPoli;
                 }
 
                 velikost += VelikostiPoli.size() - 1;
-
                 double zbytek = sirka - velikost;
-
                 Mezery.add((int) Math.ceil(zbytek / 2));
 
                 for (int j = 0; j < VelikostiPoli.size() - 1; j++) {
                     Mezery.add(1);
                 }
-
                 Mezery.add((int) Math.floor(zbytek / 2));
-
             }
-            if(VelikostiPoli.size() +1 != Mezery.size() ){
+            if (VelikostiPoli.size() + 1 != Mezery.size()) {
 
-                System.out.println("ALERT policek a mezer" + VelikostiPoli.size() +","+ Mezery.size());
-
+                System.out.println("ALERT policek a mezer" + VelikostiPoli.size() + "," + Mezery.size());
             }
         }
 
@@ -218,14 +185,11 @@ public class Main {
     // vraci sloupec tajenky ve jako ve "sloucenem" tvaru
     public static ArrayList<Integer> arraylistFromPole(int sloupec) {
 
-        ArrayList<Integer> a = new ArrayList();
-
+        ArrayList<Integer> a = new ArrayList<>();
         int kombo = 0;
 
         for (int i = 0; i < vyska; i++) {
-
             if (tajenka[i][sloupec]) {
-
                 kombo++;
             } else {
                 if (kombo != 0) {
@@ -233,7 +197,6 @@ public class Main {
                 }
                 kombo = 0;
             }
-
         }
 
         if (kombo != 0) {
@@ -245,28 +208,27 @@ public class Main {
 
     // spocte sumu needlemanu vsech sloupcu
     public static int spoctiFitness() {
-
         int suma = 0;
 
-        for (int i = 0; i < horniLegenda.size(); i++) {
+        
+
+        for (int i = 0; i < sirka; i++) {
             suma += needlemanWunch(horniLegenda.get(i), arraylistFromPole(i));
         }
-
         return suma;
     }
 
     // vypise na sout hodnoty needlemana pro kazdy sloupec
-    public static void vypisNeedlemanaProSloupce() {
-
-        for (int i = 0; i < horniLegenda.size(); i++) {
-            System.out.println("needleman " + i + ": " + needlemanWunch(horniLegenda.get(i), arraylistFromPole(i)));
-        }
-
-    }
+    //  public static void vypisNeedlemanaProSloupce() {
+    //    for (int i = 0; i < horniLegenda.size(); i++) {
+    //   System.out.println("needleman " + i + ": " + needlemanWunch(horniLegenda.get(i), arraylistFromPole(i)));
+    //   }
+    // }
 
     public static void prehazimMezery(int radek, ArrayList<Integer> IndexyMezerKtereMuzuUbrat) {
 
         ArrayList<Integer> noveMezery = velikostiMezer.get(radek);
+
 
         for (int i = 0; i < IndexyMezerKtereMuzuUbrat.size(); i++) { // IndexyMezerKtereMuzuUbrat obsahuje indexy mezer, ktere muzu ubrat
             for (int j = 0; j < noveMezery.size(); j++) { // velikosti mezer
@@ -274,27 +236,29 @@ public class Main {
                     continue;
                 }
 
+                // zmen mezery
                 int indexZeKterehoUbiram = IndexyMezerKtereMuzuUbrat.get(i);
-
                 noveMezery.set(indexZeKterehoUbiram, noveMezery.get(indexZeKterehoUbiram) - 1);
                 noveMezery.set(j, noveMezery.get(j) + 1);
 
                 // uprav radek v tajence
-                // printRadek(radek, noveMezery);
                 VyplnRadekTajenky(radek, noveMezery);
 
                 // otestuj
                 fitnessKandidata = spoctiFitness();
 
-                if (fitnessKandidata >= nejnizsifitness && fitnessKandidata >= soucasnyFitness) {
-                    nejnizsifitness = fitnessKandidata;
+                if (fitnessKandidata >= nejnizsifitness) {
 
-                    ZmenenyRadek = radek;
-                    lepsiMezery = (ArrayList)noveMezery.clone();
-
+                    if (Tabu.contains(velikostiMezer.hashCode())) { // tuto moznost uz jsem zkusil
+                        System.out.println("*Narazil jsem na hash kolizi*");
+                    } else {
+                        nejnizsifitness = fitnessKandidata;
+                        ZmenenyRadek = radek;
+                        lepsiMezery = (ArrayList<Integer>) noveMezery.clone();
+                    }
                 }
 
-                //vrat
+                //vrat co jsi zmenil
                 noveMezery.set(indexZeKterehoUbiram, noveMezery.get(indexZeKterehoUbiram) + 1);
                 noveMezery.set(j, noveMezery.get(j) - 1);
                 VyplnRadekTajenky(radek, noveMezery);
@@ -305,6 +269,48 @@ public class Main {
 
     public static void main(String[] args) {
 
+        horniLegenda = new ArrayList<>(sirka);
+        levaLegenda = new ArrayList<>(vyska);
+
+        Scanner in = null;
+        Scanner radeksc = null;
+
+        try {
+            in = new Scanner(new FileReader("25x20.txt"));
+        } catch (FileNotFoundException ex) {
+            System.out.println("Nemuzu najit soubor 7x8.txt");
+        }
+
+        String radek = in.nextLine(); //"radky"
+
+        ArrayList<Integer> novyRadek;
+
+        while (true) {
+            radek = in.nextLine();
+
+            if (radek.startsWith("sloupce")) break;
+
+            novyRadek = new ArrayList<Integer>();
+
+            radeksc = new Scanner(radek);
+
+            while (radeksc.hasNextInt()) {
+                novyRadek.add(radeksc.nextInt());
+            }
+            levaLegenda.add(novyRadek);
+        }
+
+        while (in.hasNext()) {
+            radek = in.nextLine();
+            novyRadek = new ArrayList<Integer>();
+
+            radeksc = new Scanner(radek);
+            while (radeksc.hasNextInt()) {
+                novyRadek.add(0, radeksc.nextInt());
+            }
+            horniLegenda.add(novyRadek);
+        }
+
         initializeVariables();
         vytvorMezery();
 
@@ -314,27 +320,26 @@ public class Main {
         System.out.println("soucasny fitness:" + soucasnyFitness);
         nejnizsifitness = soucasnyFitness;
 
-        ArrayList<Integer> MuzuUbrat = new ArrayList();
+        ArrayList<Integer> MuzuUbrat = new ArrayList<>();
 
-        for (int p = 0; p < 30; p++) { // opakovani optimalizace
-            System.out.println("");
-            System.out.println( p+1 + ". KOLO");
-            printPole();
+        // opakovani optimalizace
+        for (int p = 0; p < 300; p++) {
+            //  System.out.println("");
+            //System.out.println(p + 1 + ". KOLO");
+            //printPole();
+            nejnizsifitness = Integer.MIN_VALUE;
 
             for (int i = 0; i < vyska; i++) { // radek po radku
 
                 ArrayList<Integer> mezeryVAktualnimRadku = velikostiMezer.get(i);
 
+                //radek nema policka, nema smysl nic prekladavat
                 if (mezeryVAktualnimRadku.isEmpty()) {
                     continue;
                 }
 
-                // System.out.println();
-                // System.out.println("radek:" + i);
-
                 MuzuUbrat.clear();
 
-                // muzu vlozit do vsech mezer (???)
                 // prvni mezera
                 if (mezeryVAktualnimRadku.get(0) > 0) {
                     MuzuUbrat.add(0);
@@ -345,26 +350,27 @@ public class Main {
                     MuzuUbrat.add(mezeryVAktualnimRadku.size() - 1);
                 }
 
-                for (int j = 1; j < mezeryVAktualnimRadku.size() - 1; j++) { // uvnitr radku najdu mista na vkladani a vybirani
+                // uvnitr radku najdu mista na vkladani a vybirani
+                for (int j = 1; j < mezeryVAktualnimRadku.size() - 1; j++) {
 
                     if (mezeryVAktualnimRadku.get(j) > 1) {
                         MuzuUbrat.add(j);
                     }
                 }
-
                 prehazimMezery(i, MuzuUbrat);
-
             }
 
             if (nejnizsifitness >= soucasnyFitness) {
 
-                velikostiMezer.set(ZmenenyRadek,lepsiMezery);
-
+                velikostiMezer.set(ZmenenyRadek, lepsiMezery);
                 soucasnyFitness = nejnizsifitness;
+
+                Tabu.add(velikostiMezer.hashCode());
 
                 System.out.println();
                 System.out.println("zlepsuju moje pole" + nejnizsifitness + " zmena v radku " + ZmenenyRadek);
-                printPole();
+                printRadek(ZmenenyRadek,velikostiMezer.get(ZmenenyRadek));
+                //   printPole();
 
                 if (soucasnyFitness == 0) {
                     System.out.println("MAM SPRAVNY NONOGRAM!!!");
@@ -374,5 +380,6 @@ public class Main {
             }
 
         }
+        printPole();
     }
 }
