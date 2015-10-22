@@ -317,11 +317,11 @@ public class Main {
         int kolikuberu;
         int indexZeKterehoUbiram;
 
-        for (int k = 0; k < 10; k++) {
+        for (int k = 0; k < 8; k++) {
 
             mezeryKtereMenim = velikostiMezer.get(radek);
 
-            for (int l = 0; l < 2; l++) {
+            for (int l = 0; l < 5; l++) {
 
                 najdiCoMuzuUbrat(radek);
 
