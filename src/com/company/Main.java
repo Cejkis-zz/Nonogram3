@@ -2,7 +2,6 @@ package com.company;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Scanner;
@@ -16,13 +15,14 @@ public class Main {
 
     static HashSet<Integer> Tabu = new HashSet<>();
 
-    static ArrayList<ArrayList<Integer>> nejlepsiMezery;
+    static Integer ZmenenyRadek = 0;
+    static ArrayList<Integer> nejlepsiMezery;
     static ArrayList<Integer> IndexyMezerKtereMuzuUbrat = new ArrayList<>();
 
     static boolean[][] tajenka;
 
-    static int vyska;
-    static int sirka;
+    static int vyska ;
+    static int sirka ;
     static int soucasnyFitness;
     static int nejvyssifitness;
     static int fitnessKandidata;
@@ -135,7 +135,7 @@ public class Main {
             pointer++;
         }
 
-        //   System.out.println( radek + " * " + polickaVRadku.size() + " " + mezeryVRadku.size());
+      //   System.out.println( radek + " * " + polickaVRadku.size() + " " + mezeryVRadku.size());
 
         for (int j = 0; j < polickaVRadku.size(); j++) { // pro vsehna policka
 
@@ -240,22 +240,6 @@ public class Main {
         return target;
     }
 
-    public static ArrayList<ArrayList<Integer>> CopyArrayInArray(ArrayList<ArrayList<Integer>> source) {
-
-        ArrayList<ArrayList<Integer>> target = new ArrayList<>();
-
-        for (int i = 0; i < source.size(); i++) {
-
-            ArrayList<Integer> radek = new ArrayList<>();
-
-            for (int j = 0; j < source.get(i).size(); j++) {
-                radek.add(source.get(i).get(j));
-            }
-            target.add(radek);
-        }
-        return target;
-    }
-
     static void readInput() {
 
         Scanner in = null;
@@ -324,30 +308,28 @@ public class Main {
         }
     }
 
-    public static void prehazimMezery() {
+    public static void prehazimMezery(int radek) {
 
-        ArrayList<Integer> mezeryKtereMenim;
+        ArrayList<Integer> mezeryKtereMenim ;
+        ArrayList<Integer> zalohaMezer = CopyArray(velikostiMezer.get(radek));
 
-        ArrayList<ArrayList<Integer>> zalohaMezer = CopyArrayInArray(velikostiMezer);
+        int i,j;
+        int kolikuberu;
+        int indexZeKterehoUbiram;
 
-        int i, j;
-        int kolikuberu, indexZeKterehoUbiram, radek;
-
-        // kolik vytvorim "jedincu"
         for (int k = 0; k < 10; k++) {
 
-            // kolik zmen provedu v kazdem jedinci
-            for (int l = 0; l < 5; l++) {
+            mezeryKtereMenim = velikostiMezer.get(radek);
 
-                radek = (int) (Math.random() * vyska);
-                mezeryKtereMenim = velikostiMezer.get(radek);
+            for (int l = 0; l < 2; l++) {
 
                 najdiCoMuzuUbrat(radek);
 
                 do {
                     i = (int) (Math.random() * IndexyMezerKtereMuzuUbrat.size());
                     j = (int) (Math.random() * mezeryKtereMenim.size());
-                } while (IndexyMezerKtereMuzuUbrat.get(i) == j);
+                }while(IndexyMezerKtereMuzuUbrat.get(i) == j);
+                //   System.out.println(i + " * " +j );
 
                 // zmen mezery
                 indexZeKterehoUbiram = IndexyMezerKtereMuzuUbrat.get(i);
@@ -359,28 +341,27 @@ public class Main {
 
                 mezeryKtereMenim.set(indexZeKterehoUbiram, mezeryKtereMenim.get(indexZeKterehoUbiram) - kolikuberu);
                 mezeryKtereMenim.set(j, mezeryKtereMenim.get(j) + kolikuberu);
-
-                VyplnRadekTajenky(radek, mezeryKtereMenim);
             }
 
             // otestuj
-
+            VyplnRadekTajenky(radek, mezeryKtereMenim);
             fitnessKandidata = spoctiFitness();
 
             // hledam nejlepsi prvek, kterej jeste neni v hashsetu
-            if (fitnessKandidata >= nejvyssifitness
-                //&& !Tabu.contains(velikostiMezer.hashCode())
-                    ) {
+            if (fitnessKandidata >= soucasnyFitness && !Tabu.contains(velikostiMezer.hashCode())
+            ){
                 // System.out.println(fitnessKandidata + " LEPSI ******************");
                 nejvyssifitness = fitnessKandidata;
-
-                nejlepsiMezery = velikostiMezer;
+                ZmenenyRadek = radek;
+                nejlepsiMezery = CopyArray(mezeryKtereMenim);
             }
 
-            velikostiMezer = CopyArrayInArray(zalohaMezer);
+            velikostiMezer.set(radek,CopyArray(zalohaMezer));
             vyplnCelouTajenkuPodleLegendyAMezer();
-
         }
+
+        // Vrat radek jak byl
+       // velikostiMezer.set(radek,zalohaMezer);
     }
 
     public static void main(String[] args) {
@@ -397,6 +378,7 @@ public class Main {
 
         soucasnyFitness = spoctiFitness();
         System.out.println("soucasny fitness:" + soucasnyFitness);
+        nejvyssifitness = soucasnyFitness;
 
         // opakovani optimalizace
         for (int p = 0; p < 5000; p++) {
@@ -406,37 +388,36 @@ public class Main {
 
             for (int i = 0; i < vyska; i++) { // radek po radku
 
+                int radek =(int) (Math.random() * vyska);
+
                 //radek nema policka, nema smysl nic prekladavat
+                if (velikostiMezer.get(radek).isEmpty()) {
+                    continue;
+                }
 
-                prehazimMezery();
+                prehazimMezery(radek);
             }
-
             if (nejvyssifitness >= soucasnyFitness) {
-                //    System.out.println("SEM TU *****************************************************");
 
-                if (nejlepsiMezery != null) {
+            if(nejlepsiMezery != null) velikostiMezer.set(ZmenenyRadek, CopyArray(nejlepsiMezery) );
 
-                    velikostiMezer = nejlepsiMezery;
-                    soucasnyFitness = nejvyssifitness;
-                }
+              soucasnyFitness = nejvyssifitness;
 
-                // Tabu.add(velikostiMezer.hashCode());
+             Tabu.add(velikostiMezer.hashCode());
 
-                if (nejvyssifitness == 0) {
-                    System.out.println("MAM SPRAVNY NONOGRAM!!!");
-                    break;
-                }
-
-                //  }
-
-                System.out.println(p + 1 + ". KOLO. fitness " + soucasnyFitness + " kolizi " + pocetKolizi);
-                pocetKolizi = 0;
-             //   printPole();
+            if (nejvyssifitness == 0) {
+                System.out.println("MAM SPRAVNY NONOGRAM!!!");
+                break;
+            }
 
             }
 
+            System.out.println(p + 1 + ". KOLO. fitness " + soucasnyFitness + " kolizi " + pocetKolizi);
+            pocetKolizi = 0;
+          //  printPole();
 
         }
+        System.out.println();
         printPole();
     }
 }
