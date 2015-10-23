@@ -21,8 +21,8 @@ public class Main {
 
     static boolean[][] tajenka;
 
-    static int vyska ;
-    static int sirka ;
+    static int vyska;
+    static int sirka;
     static int soucasnyFitness;
     static int nejvyssifitness;
     static int fitnessKandidata;
@@ -135,7 +135,7 @@ public class Main {
             pointer++;
         }
 
-      //   System.out.println( radek + " * " + polickaVRadku.size() + " " + mezeryVRadku.size());
+        //   System.out.println( radek + " * " + polickaVRadku.size() + " " + mezeryVRadku.size());
 
         for (int j = 0; j < polickaVRadku.size(); j++) { // pro vsehna policka
 
@@ -308,60 +308,63 @@ public class Main {
         }
     }
 
-    public static void prehazimMezery(int radek) {
+    public static void prehodJednumezeruVJednomRadku(int radek, ArrayList<Integer> mezeryKtereMenim) {
 
-        ArrayList<Integer> mezeryKtereMenim ;
+        int i, j, kolikuberu, indexZeKterehoUbiram;
+
+        najdiCoMuzuUbrat(radek);
+
+        do {
+            i = (int) (Math.random() * IndexyMezerKtereMuzuUbrat.size());
+            j = (int) (Math.random() * mezeryKtereMenim.size());
+        } while (IndexyMezerKtereMuzuUbrat.get(i) == j);
+        //   System.out.println(i + " * " +j );
+
+        // zmen mezery
+        indexZeKterehoUbiram = IndexyMezerKtereMuzuUbrat.get(i);
+
+        // kdyz ubiram z prvni nebo posledni mezery, muzu ubrat vsechny policka
+        if (indexZeKterehoUbiram == 0 || indexZeKterehoUbiram == mezeryKtereMenim.size() - 1) {
+            kolikuberu = (int) (Math.random() * (mezeryKtereMenim.get(indexZeKterehoUbiram))) + 1;
+        } else kolikuberu = (int) (Math.random() * (mezeryKtereMenim.get(indexZeKterehoUbiram) - 1)) + 1;
+
+        mezeryKtereMenim.set(indexZeKterehoUbiram, mezeryKtereMenim.get(indexZeKterehoUbiram) - kolikuberu);
+        mezeryKtereMenim.set(j, mezeryKtereMenim.get(j) + kolikuberu);
+
+
+    }
+
+    public static void prehazimMezery() {
+
+        int radek = (int) (Math.random() * vyska);
+
+        ArrayList<Integer> mezeryKtereMenim;
         ArrayList<Integer> zalohaMezer = CopyArray(velikostiMezer.get(radek));
-
-        int i,j;
-        int kolikuberu;
-        int indexZeKterehoUbiram;
 
         for (int k = 0; k < 8; k++) {
 
             mezeryKtereMenim = velikostiMezer.get(radek);
 
+            // kolikrat prehazim mezery v ramci jednoho radku
             for (int l = 0; l < 5; l++) {
-
-                najdiCoMuzuUbrat(radek);
-
-                do {
-                    i = (int) (Math.random() * IndexyMezerKtereMuzuUbrat.size());
-                    j = (int) (Math.random() * mezeryKtereMenim.size());
-                }while(IndexyMezerKtereMuzuUbrat.get(i) == j);
-                //   System.out.println(i + " * " +j );
-
-                // zmen mezery
-                indexZeKterehoUbiram = IndexyMezerKtereMuzuUbrat.get(i);
-
-                // kdyz ubiram z prvni nebo posledni mezery, muzu ubrat vsechny policka
-                if (indexZeKterehoUbiram == 0 || indexZeKterehoUbiram == mezeryKtereMenim.size() - 1) {
-                    kolikuberu = (int) (Math.random() * (mezeryKtereMenim.get(indexZeKterehoUbiram))) + 1;
-                } else kolikuberu = (int) (Math.random() * (mezeryKtereMenim.get(indexZeKterehoUbiram) - 1)) + 1;
-
-                mezeryKtereMenim.set(indexZeKterehoUbiram, mezeryKtereMenim.get(indexZeKterehoUbiram) - kolikuberu);
-                mezeryKtereMenim.set(j, mezeryKtereMenim.get(j) + kolikuberu);
+                prehodJednumezeruVJednomRadku(radek, mezeryKtereMenim);
             }
 
-            // otestuj
+            // vypln tajenku a spocti fitness
             VyplnRadekTajenky(radek, mezeryKtereMenim);
             fitnessKandidata = spoctiFitness();
 
             // hledam nejlepsi prvek, kterej jeste neni v hashsetu
             if (fitnessKandidata >= soucasnyFitness && !Tabu.contains(velikostiMezer.hashCode())
-            ){
-                // System.out.println(fitnessKandidata + " LEPSI ******************");
+                    ) {
                 nejvyssifitness = fitnessKandidata;
                 ZmenenyRadek = radek;
                 nejlepsiMezery = CopyArray(mezeryKtereMenim);
             }
 
-            velikostiMezer.set(radek,CopyArray(zalohaMezer));
+            velikostiMezer.set(radek, CopyArray(zalohaMezer));
             vyplnCelouTajenkuPodleLegendyAMezer();
         }
-
-        // Vrat radek jak byl
-       // velikostiMezer.set(radek,zalohaMezer);
     }
 
     public static void main(String[] args) {
@@ -380,6 +383,8 @@ public class Main {
         System.out.println("soucasny fitness:" + soucasnyFitness);
         nejvyssifitness = soucasnyFitness;
 
+        int neuspesnychOptimalizaci = 0;
+
         // opakovani optimalizace
         for (int p = 0; p < 5000; p++) {
 
@@ -388,33 +393,27 @@ public class Main {
 
             for (int i = 0; i < vyska; i++) { // radek po radku
 
-                int radek =(int) (Math.random() * vyska);
-
-                //radek nema policka, nema smysl nic prekladavat
-                if (velikostiMezer.get(radek).isEmpty()) {
-                    continue;
-                }
-
-                prehazimMezery(radek);
+                prehazimMezery();
             }
+
             if (nejvyssifitness >= soucasnyFitness) {
 
-            if(nejlepsiMezery != null) velikostiMezer.set(ZmenenyRadek, CopyArray(nejlepsiMezery) );
+                if (nejlepsiMezery != null) velikostiMezer.set(ZmenenyRadek, CopyArray(nejlepsiMezery));
 
-              soucasnyFitness = nejvyssifitness;
+                soucasnyFitness = nejvyssifitness;
 
-             Tabu.add(velikostiMezer.hashCode());
+                Tabu.add(velikostiMezer.hashCode());
 
-            if (nejvyssifitness == 0) {
-                System.out.println("MAM SPRAVNY NONOGRAM!!!");
-                break;
+                if (nejvyssifitness == 0) {
+                    System.out.println("MAM SPRAVNY NONOGRAM!!!");
+                    break;
+                }
+
             }
 
-            }
-
-            System.out.println(p + 1 + ". KOLO. fitness " + soucasnyFitness + " kolizi " + pocetKolizi);
+            System.out.println(p + 1 + ". KOLO. fitness " + soucasnyFitness + " kolizi " + neuspesnychOptimalizaci);
             pocetKolizi = 0;
-          //  printPole();
+            //  printPole();
 
         }
         System.out.println();
