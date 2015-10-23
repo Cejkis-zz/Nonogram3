@@ -13,7 +13,7 @@ public class Main {
     static ArrayList<ArrayList<Integer>> levaLegenda;
     static ArrayList<ArrayList<Integer>> velikostiMezer;
 
-    static HashSet<Integer> Tabu = new HashSet<>();
+    static HashSet<Integer> Tabu;
 
     static Integer ZmenenyRadek = 0;
     static ArrayList<Integer> nejlepsiMezery;
@@ -69,6 +69,7 @@ public class Main {
 
     public static void initializeVariables() {
 
+        Tabu = new HashSet<>();
         sirka = horniLegenda.size();
         vyska = levaLegenda.size();
         tajenka = new boolean[vyska][sirka];
@@ -374,49 +375,69 @@ public class Main {
 
         readInput();
 
-        initializeVariables();
-        vytvorMezery();
+        int iteraci = 0;
 
-        vyplnCelouTajenkuPodleLegendyAMezer();
+        while (true) {
 
-        soucasnyFitness = spoctiFitness();
-        System.out.println("soucasny fitness:" + soucasnyFitness);
-        nejvyssifitness = soucasnyFitness;
+            initializeVariables();
+            vytvorMezery();
+            vyplnCelouTajenkuPodleLegendyAMezer();
 
-        int neuspesnychOptimalizaci = 0;
+            soucasnyFitness = spoctiFitness();
+            System.out.println("soucasny fitness:" + soucasnyFitness);
+            nejvyssifitness = soucasnyFitness;
 
-        // opakovani optimalizace
-        for (int p = 0; p < 5000; p++) {
+            int neuspesnychOptimalizaci = 0;
 
-            nejlepsiMezery = null;
-            nejvyssifitness = Integer.MIN_VALUE;
+            // opakovani optimalizace
+            for (int p=0; p < 3000; p++) {
 
-            for (int i = 0; i < vyska; i++) { // radek po radku
 
-                prehazimMezery();
-            }
+                nejlepsiMezery = null;
+                nejvyssifitness = Integer.MIN_VALUE;
 
-            if (nejvyssifitness >= soucasnyFitness) {
+                for (int i = 0; i < vyska; i++) { // radek po radku
 
-                if (nejlepsiMezery != null) velikostiMezer.set(ZmenenyRadek, CopyArray(nejlepsiMezery));
+                    prehazimMezery();
+                }
 
-                soucasnyFitness = nejvyssifitness;
+                if (nejvyssifitness >= soucasnyFitness) {
 
-                Tabu.add(velikostiMezer.hashCode());
+                    if (nejlepsiMezery != null) velikostiMezer.set(ZmenenyRadek, CopyArray(nejlepsiMezery));
 
-                if (nejvyssifitness == 0) {
-                    System.out.println("MAM SPRAVNY NONOGRAM!!!");
+                    soucasnyFitness = nejvyssifitness;
+
+                    Tabu.add(velikostiMezer.hashCode());
+
+                    if (nejvyssifitness == 0) {
+                        System.out.println("MAM SPRAVNY NONOGRAM!!!");
+                        break;
+                    }
+
+                }
+
+               // System.out.println(iteraci + 1 + ". KOLO. fitness " + soucasnyFitness + " kolizi " + neuspesnychOptimalizaci);
+                pocetKolizi = 0;
+                //  printPole();
+
+
+                if( (p > 1000 && soucasnyFitness < -40) || (p > 2000 && soucasnyFitness < -30) ){
+                    System.out.println("RESET " + p);
                     break;
                 }
 
+                iteraci++;
+
+
             }
 
-            System.out.println(p + 1 + ". KOLO. fitness " + soucasnyFitness + " kolizi " + neuspesnychOptimalizaci);
-            pocetKolizi = 0;
-            //  printPole();
+            if(nejvyssifitness == 0){
+                System.out.println("iteraci: " + iteraci);
+                printPole();
+                break;
+            }
+
 
         }
-        System.out.println();
-        printPole();
     }
 }
