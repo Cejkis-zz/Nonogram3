@@ -419,6 +419,7 @@ public class Main {
                // System.out.println(iteraci + 1 + ". KOLO. fitness " + soucasnyFitness + " kolizi " + neuspesnychOptimalizaci);
                 pocetKolizi = 0;
                 //  printPole();
+                //ggg
 
 
                 if( (p > 1000 && soucasnyFitness < -40) || (p > 2000 && soucasnyFitness < -30) ){
