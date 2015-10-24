@@ -9,24 +9,21 @@ import java.util.Scanner;
 public class Main {
 
     static ArrayList<ArrayList<Integer>> horniLegenda;
-
     static ArrayList<ArrayList<Integer>> levaLegenda;
     static ArrayList<ArrayList<Integer>> velikostiMezer;
 
-    static HashSet<Integer> Tabu;
-
     static Integer ZmenenyRadek = 0;
     static ArrayList<Integer> nejlepsiMezery;
-    static ArrayList<Integer> IndexyMezerKtereMuzuUbrat = new ArrayList<>();
+    static ArrayList<Integer> IndexyMezerKtereMuzuUbrat;
 
     static boolean[][] tajenka;
 
-    static int vyska;
-    static int sirka;
+
+    static int vyska, sirka;
     static int soucasnyFitness;
     static int nejvyssifitness;
-    static int fitnessKandidata;
-    static int pocetKolizi;
+    static int iteraciBezZlepseni = 0;
+
 
     public static void printPole() {
 
@@ -69,11 +66,11 @@ public class Main {
 
     public static void initializeVariables() {
 
-        Tabu = new HashSet<>();
         sirka = horniLegenda.size();
         vyska = levaLegenda.size();
         tajenka = new boolean[vyska][sirka];
         velikostiMezer = new ArrayList<>(vyska);
+        IndexyMezerKtereMuzuUbrat = new ArrayList<>(vyska);
 
         for (int i = 0; i < vyska; i++) {
             velikostiMezer.add(new ArrayList<Integer>());
@@ -224,13 +221,6 @@ public class Main {
         return suma;
     }
 
-    // vypise na sout hodnoty needlemana pro kazdy sloupec
-    //  public static void vypisNeedlemanaProSloupce() {
-    //    for (int i = 0; i < horniLegenda.size(); i++) {
-    //   System.out.println("needleman " + i + ": " + needlemanWunch(horniLegenda.get(i), arraylistFromPole(i)));
-    //   }
-    // }
-
     public static ArrayList<Integer> CopyArray(ArrayList<Integer> source) {
 
         ArrayList<Integer> target = new ArrayList<>();
@@ -338,16 +328,16 @@ public class Main {
     public static void prehazimMezery() {
 
         int radek = (int) (Math.random() * vyska);
-
+        int fitnessKandidata;
         ArrayList<Integer> mezeryKtereMenim;
         ArrayList<Integer> zalohaMezer = CopyArray(velikostiMezer.get(radek));
 
-        for (int k = 0; k < 15; k++) {
+        for (int k = 0; k < 4 ; k++) {
 
             mezeryKtereMenim = velikostiMezer.get(radek);
 
             // kolikrat prehazim mezery v ramci jednoho radku
-            for (int l = 0; l < mezeryKtereMenim.size(); l++) {
+            for (int l = 0; l < 2 ; l++) {
                 prehodJednumezeruVJednomRadku(radek, mezeryKtereMenim);
             }
 
@@ -356,17 +346,19 @@ public class Main {
             fitnessKandidata = spoctiFitness();
 
             // hledam nejlepsi prvek, kterej jeste neni v hashsetu
-            if (fitnessKandidata >= soucasnyFitness
-                    && !Tabu.contains(velikostiMezer.hashCode())
+            if (fitnessKandidata >= soucasnyFitness - iteraciBezZlepseni/10
                     ) {
                 nejvyssifitness = fitnessKandidata;
                 ZmenenyRadek = radek;
                 nejlepsiMezery = CopyArray(mezeryKtereMenim);
-                
+                VyplnRadekTajenky(radek, zalohaMezer);
+                velikostiMezer.set(radek, CopyArray(zalohaMezer));
+                return;
             }
 
             velikostiMezer.set(radek, CopyArray(zalohaMezer));
-            vyplnCelouTajenkuPodleLegendyAMezer();
+            VyplnRadekTajenky(radek, zalohaMezer);
+            //   vyplnCelouTajenkuPodleLegendyAMezer();
         }
     }
 
@@ -377,6 +369,7 @@ public class Main {
 
         readInput();
 
+        int restartu = 0;
         int iteraci = 0;
 
         while (true) {
@@ -389,57 +382,57 @@ public class Main {
             System.out.println("soucasny fitness:" + soucasnyFitness);
             nejvyssifitness = soucasnyFitness;
 
-            int neuspesnychOptimalizaci = 0;
-
             // opakovani optimalizace
-            for (int p=0; p < 60000; p++) {
-
+            for (int p = 0; p < 200000; p++) {
 
                 nejlepsiMezery = null;
                 nejvyssifitness = Integer.MIN_VALUE;
 
-                for (int i = 0; i < 1; i++) { // radek po radku
+                //for (int i = 0; i < 5; i++) { // radek po radku
                     prehazimMezery();
-                }
+                //}
 
                 if (nejvyssifitness >= soucasnyFitness) {
+                    if (nejvyssifitness > soucasnyFitness)
+                    iteraciBezZlepseni = 0;
 
-                    if (nejlepsiMezery != null) velikostiMezer.set(ZmenenyRadek, CopyArray(nejlepsiMezery));
-
-                    soucasnyFitness = nejvyssifitness;
-
-                    Tabu.add(velikostiMezer.hashCode());
+                    if (nejlepsiMezery != null) {
+                        velikostiMezer.set(ZmenenyRadek, CopyArray(nejlepsiMezery));
+                        VyplnRadekTajenky(ZmenenyRadek, velikostiMezer.get(ZmenenyRadek));
+                        soucasnyFitness = nejvyssifitness;
+                    }
 
                     if (nejvyssifitness == 0) {
                         System.out.println("MAM SPRAVNY NONOGRAM!!!");
                         break;
                     }
 
+                } else if (iteraciBezZlepseni < 50)
+                    iteraciBezZlepseni++;
+
+
+                if (iteraci % 100 == 0) {
+                    System.out.println(iteraci + ". KOLO. Restartu: " + restartu + " Fitness: "
+                            + soucasnyFitness + " Iteraci bez zlepseni " + iteraciBezZlepseni);
                 }
 
-                if (iteraci%10 == 0) {
-                    System.out.println(iteraci  + ". KOLO. fitness " + soucasnyFitness + " kolizi " + neuspesnychOptimalizaci);
-                }
-
-                //  printPole();
-
-
-                if( (p > 13000*2 && soucasnyFitness < -40) || (p > 25000*2 && soucasnyFitness < -30) || (p > 37000*2 && soucasnyFitness < -20) ){
-                    System.out.println("RESET " + p);
+                if ((p > 25000 && soucasnyFitness < -40) ||
+                        (p > 50000 && soucasnyFitness < -30) ||
+                        (p > 75000 && soucasnyFitness < -20)) {
+                    System.out.println();
+                    System.out.println();
                     break;
                 }
 
                 iteraci++;
-
-
             }
 
-            if(nejvyssifitness == 0){
-                System.out.println("iteraci: " + iteraci);
+            if (nejvyssifitness == 0) {
                 printPole();
-                break;
+                return;
             }
 
+            restartu++;
 
         }
     }
