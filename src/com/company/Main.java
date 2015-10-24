@@ -342,12 +342,12 @@ public class Main {
         ArrayList<Integer> mezeryKtereMenim;
         ArrayList<Integer> zalohaMezer = CopyArray(velikostiMezer.get(radek));
 
-        for (int k = 0; k < 8; k++) {
+        for (int k = 0; k < 15; k++) {
 
             mezeryKtereMenim = velikostiMezer.get(radek);
 
             // kolikrat prehazim mezery v ramci jednoho radku
-            for (int l = 0; l < 5; l++) {
+            for (int l = 0; l < mezeryKtereMenim.size(); l++) {
                 prehodJednumezeruVJednomRadku(radek, mezeryKtereMenim);
             }
 
@@ -356,11 +356,13 @@ public class Main {
             fitnessKandidata = spoctiFitness();
 
             // hledam nejlepsi prvek, kterej jeste neni v hashsetu
-            if (fitnessKandidata >= soucasnyFitness && !Tabu.contains(velikostiMezer.hashCode())
+            if (fitnessKandidata >= soucasnyFitness
+                    && !Tabu.contains(velikostiMezer.hashCode())
                     ) {
                 nejvyssifitness = fitnessKandidata;
                 ZmenenyRadek = radek;
                 nejlepsiMezery = CopyArray(mezeryKtereMenim);
+                
             }
 
             velikostiMezer.set(radek, CopyArray(zalohaMezer));
@@ -390,14 +392,13 @@ public class Main {
             int neuspesnychOptimalizaci = 0;
 
             // opakovani optimalizace
-            for (int p=0; p < 3000; p++) {
+            for (int p=0; p < 60000; p++) {
 
 
                 nejlepsiMezery = null;
                 nejvyssifitness = Integer.MIN_VALUE;
 
-                for (int i = 0; i < vyska; i++) { // radek po radku
-
+                for (int i = 0; i < 1; i++) { // radek po radku
                     prehazimMezery();
                 }
 
@@ -416,13 +417,14 @@ public class Main {
 
                 }
 
-               // System.out.println(iteraci + 1 + ". KOLO. fitness " + soucasnyFitness + " kolizi " + neuspesnychOptimalizaci);
-                pocetKolizi = 0;
+                if (iteraci%10 == 0) {
+                    System.out.println(iteraci  + ". KOLO. fitness " + soucasnyFitness + " kolizi " + neuspesnychOptimalizaci);
+                }
+
                 //  printPole();
-                //ggg
 
 
-                if( (p > 1000 && soucasnyFitness < -40) || (p > 2000 && soucasnyFitness < -30) ){
+                if( (p > 13000*2 && soucasnyFitness < -40) || (p > 25000*2 && soucasnyFitness < -30) || (p > 37000*2 && soucasnyFitness < -20) ){
                     System.out.println("RESET " + p);
                     break;
                 }
