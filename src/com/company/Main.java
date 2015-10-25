@@ -1,9 +1,9 @@
 package com.company;
 
+import java.awt.image.AreaAveragingScaleFilter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Scanner;
 
 public class Main {
@@ -12,18 +12,22 @@ public class Main {
     static ArrayList<ArrayList<Integer>> levaLegenda;
     static ArrayList<ArrayList<Integer>> velikostiMezer;
 
-    static Integer ZmenenyRadek = 0;
+    static Integer ZmenenyRadek;
     static ArrayList<Integer> nejlepsiMezery;
-    static ArrayList<Integer> IndexyMezerKtereMuzuUbrat;
 
     static boolean[][] tajenka;
 
+    static int nasobekIteraci = 8;
 
     static int vyska, sirka;
-    static int soucasnyFitness;
-    static int nejvyssifitness;
-    static int iteraciBezZlepseni = 0;
 
+    static int soucasnyFitness;
+    static int nejlepsiFitnessEver;
+    static int fitnessKandidata;
+
+    static int iteraciBezZlepseni;
+
+    static String jmenoVstupu = "25x20.txt";
 
     public static void printPole() {
 
@@ -38,11 +42,6 @@ public class Main {
         //  if(i<10){System.out.print(" " + i );}else{
         //       System.out.print("" + i );
         //   }
-
-
-        if (policka.size() + 1 != Mezery.size()) {
-            System.out.println("*alert policek a mezer" + policka.size() + "," + Mezery.size());
-        }
 
         for (int j = 0; j < Mezery.get(0); j++) {
             System.out.print("  ");
@@ -66,11 +65,14 @@ public class Main {
 
     public static void initializeVariables() {
 
+        iteraciBezZlepseni = 0;
+        nejlepsiFitnessEver = -500;
+
         sirka = horniLegenda.size();
         vyska = levaLegenda.size();
         tajenka = new boolean[vyska][sirka];
-        velikostiMezer = new ArrayList<>(vyska);
-        IndexyMezerKtereMuzuUbrat = new ArrayList<>(vyska);
+        velikostiMezer = new ArrayList<>();
+
 
         for (int i = 0; i < vyska; i++) {
             velikostiMezer.add(new ArrayList<Integer>());
@@ -237,9 +239,9 @@ public class Main {
         Scanner radeksc = null;
 
         try {
-            in = new Scanner(new FileReader("25x20.txt"));
+            in = new Scanner(new FileReader(jmenoVstupu));
         } catch (FileNotFoundException ex) {
-            System.out.println("Nemuzu najit soubor 7x8.txt");
+            System.out.println("Nemuzu najit soubor " + jmenoVstupu);
         }
 
         String radek = in.nextLine(); //"radky"
@@ -274,9 +276,9 @@ public class Main {
 
     }
 
-    static void najdiCoMuzuUbrat(int radek) {
+    static ArrayList<Integer> najdiCoMuzuUbrat(int radek) {
 
-        IndexyMezerKtereMuzuUbrat.clear();
+        ArrayList<Integer> IndexyMezerKtereMuzuUbrat = new ArrayList<>();
 
         ArrayList<Integer> mezeryVAktualnimRadku = velikostiMezer.get(radek);
 
@@ -297,13 +299,17 @@ public class Main {
                 IndexyMezerKtereMuzuUbrat.add(j);
             }
         }
+
+        return IndexyMezerKtereMuzuUbrat;
     }
 
     public static void prehodJednumezeruVJednomRadku(int radek, ArrayList<Integer> mezeryKtereMenim) {
 
         int i, j, kolikuberu, indexZeKterehoUbiram;
 
-        najdiCoMuzuUbrat(radek);
+         ArrayList<Integer> IndexyMezerKtereMuzuUbrat = najdiCoMuzuUbrat(radek);
+
+        if(IndexyMezerKtereMuzuUbrat.isEmpty()) return;
 
         do {
             i = (int) (Math.random() * IndexyMezerKtereMuzuUbrat.size());
@@ -327,39 +333,31 @@ public class Main {
 
     public static void prehazimMezery() {
 
-        int radek = (int) (Math.random() * vyska);
-        int fitnessKandidata;
+        ZmenenyRadek = (int) (Math.random() * vyska);
         ArrayList<Integer> mezeryKtereMenim;
-        ArrayList<Integer> zalohaMezer = CopyArray(velikostiMezer.get(radek));
+        ArrayList<Integer> zalohaMezer = CopyArray(velikostiMezer.get(ZmenenyRadek));
 
-        for (int k = 0; k < 4 ; k++) {
+        mezeryKtereMenim = velikostiMezer.get(ZmenenyRadek);
 
-            mezeryKtereMenim = velikostiMezer.get(radek);
+        if(mezeryKtereMenim.size() == 1) return;
 
-            // kolikrat prehazim mezery v ramci jednoho radku
-            for (int l = 0; l < 2 ; l++) {
-                prehodJednumezeruVJednomRadku(radek, mezeryKtereMenim);
-            }
+        int kolikrat = (int)(Math.random() * (3 + iteraciBezZlepseni/20) ) + 2;
 
-            // vypln tajenku a spocti fitness
-            VyplnRadekTajenky(radek, mezeryKtereMenim);
-            fitnessKandidata = spoctiFitness();
-
-            // hledam nejlepsi prvek, kterej jeste neni v hashsetu
-            if (fitnessKandidata >= soucasnyFitness - iteraciBezZlepseni/10
-                    ) {
-                nejvyssifitness = fitnessKandidata;
-                ZmenenyRadek = radek;
-                nejlepsiMezery = CopyArray(mezeryKtereMenim);
-                VyplnRadekTajenky(radek, zalohaMezer);
-                velikostiMezer.set(radek, CopyArray(zalohaMezer));
-                return;
-            }
-
-            velikostiMezer.set(radek, CopyArray(zalohaMezer));
-            VyplnRadekTajenky(radek, zalohaMezer);
-            //   vyplnCelouTajenkuPodleLegendyAMezer();
+        // kolikrat prehazim mezery v ramci jednoho radku
+        for (int l = 0; l < kolikrat; l++) {
+            prehodJednumezeruVJednomRadku(ZmenenyRadek, mezeryKtereMenim);
         }
+
+        // vypln tajenku a spocti fitness
+        VyplnRadekTajenky(ZmenenyRadek, mezeryKtereMenim);
+        fitnessKandidata = spoctiFitness();
+
+        nejlepsiMezery = mezeryKtereMenim;
+
+        // vrat puvodni hodnoty
+        velikostiMezer.set(ZmenenyRadek, zalohaMezer);
+        VyplnRadekTajenky(ZmenenyRadek, zalohaMezer);
+
     }
 
     public static void main(String[] args) {
@@ -378,47 +376,50 @@ public class Main {
             vytvorMezery();
             vyplnCelouTajenkuPodleLegendyAMezer();
 
+
             soucasnyFitness = spoctiFitness();
             System.out.println("soucasny fitness:" + soucasnyFitness);
-            nejvyssifitness = soucasnyFitness;
+            fitnessKandidata = soucasnyFitness;
 
             // opakovani optimalizace
-            for (int p = 0; p < 200000; p++) {
+            for (int p = 0; p < 300000 * nasobekIteraci; p++) {
 
-                nejlepsiMezery = null;
-                nejvyssifitness = Integer.MIN_VALUE;
+                prehazimMezery();
 
-                //for (int i = 0; i < 5; i++) { // radek po radku
-                    prehazimMezery();
-                //}
+                if ((fitnessKandidata >= soucasnyFitness - 2  && fitnessKandidata >= nejlepsiFitnessEver - 4  && fitnessKandidata < -20 )
+                || (fitnessKandidata >= soucasnyFitness - 2  && fitnessKandidata >= nejlepsiFitnessEver -2  && fitnessKandidata < -4 )
+                        || (fitnessKandidata >= -4 && fitnessKandidata >= soucasnyFitness)
+                        ) {
+                    if (fitnessKandidata > soucasnyFitness)
+                        iteraciBezZlepseni = 0;
 
-                if (nejvyssifitness >= soucasnyFitness) {
-                    if (nejvyssifitness > soucasnyFitness)
-                    iteraciBezZlepseni = 0;
+                    if(fitnessKandidata > nejlepsiFitnessEver){
+                        nejlepsiFitnessEver = fitnessKandidata;
+                    }
 
                     if (nejlepsiMezery != null) {
                         velikostiMezer.set(ZmenenyRadek, CopyArray(nejlepsiMezery));
                         VyplnRadekTajenky(ZmenenyRadek, velikostiMezer.get(ZmenenyRadek));
-                        soucasnyFitness = nejvyssifitness;
+                        soucasnyFitness = fitnessKandidata;
                     }
 
-                    if (nejvyssifitness == 0) {
+                    if (fitnessKandidata == 0) {
                         System.out.println("MAM SPRAVNY NONOGRAM!!!");
                         break;
                     }
 
-                } else if (iteraciBezZlepseni < 50)
+                } else if (iteraciBezZlepseni < 200)
                     iteraciBezZlepseni++;
 
 
-                if (iteraci % 100 == 0) {
+                if (iteraci % 1000 == 0) {
                     System.out.println(iteraci + ". KOLO. Restartu: " + restartu + " Fitness: "
                             + soucasnyFitness + " Iteraci bez zlepseni " + iteraciBezZlepseni);
                 }
 
-                if ((p > 25000 && soucasnyFitness < -40) ||
-                        (p > 50000 && soucasnyFitness < -30) ||
-                        (p > 75000 && soucasnyFitness < -20)) {
+                if ((p > 50000 * nasobekIteraci && soucasnyFitness < -40) ||
+                        (p > 75000 * nasobekIteraci && soucasnyFitness < -30) ||
+                        (p > 150000 * nasobekIteraci && soucasnyFitness < -20)) {
                     System.out.println();
                     System.out.println();
                     break;
@@ -427,7 +428,7 @@ public class Main {
                 iteraci++;
             }
 
-            if (nejvyssifitness == 0) {
+            if (fitnessKandidata == 0) {
                 printPole();
                 return;
             }
