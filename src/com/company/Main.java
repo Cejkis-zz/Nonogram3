@@ -27,7 +27,7 @@ public class Main {
 
     static int iteraciBezZlepseni;
 
-    static String jmenoVstupu = "25x20.txt";
+    static String jmenoVstupu = "23x26.txt";
 
     public static void printPole() {
 
