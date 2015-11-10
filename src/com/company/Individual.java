@@ -279,7 +279,8 @@ public class Individual implements  Comparable<Individual>{
 
         if (mezeryKtereMenim.size() <= 1) return;
 
-        int kolikrat = (int) (Math.random() * (3 + Main.iteraciBezZlepseni / 20)) + 2;
+        // int kolikrat = (int) (Math.random() * (3 + Main.iteraciBezZlepseni / 20)) + 2;
+        int kolikrat = mezeryKtereMenim.size();
 
         for (int l = 0; l < kolikrat; l++) {
             prehodJednumezeruVJednomRadku(zmenenyRadek, mezeryKtereMenim);
@@ -287,6 +288,12 @@ public class Individual implements  Comparable<Individual>{
 
         // vypln tajenku a spocti fitness
         VyplnRadekTajenky(zmenenyRadek, mezeryKtereMenim);
+
+
+    }
+
+    public void spoctiANastavFitness(){
+
         fitness = spoctiFitness();
 
     }
