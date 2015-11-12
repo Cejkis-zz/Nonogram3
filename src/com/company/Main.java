@@ -24,7 +24,7 @@ public class Main {
 
     static int velikostPopulace = 100;
     static int velikostSelekce = 50;
-    static int pocetDeti = 150;
+    static int pocetDeti = 100;
 
     public static void initializeVariables() {
 
@@ -35,16 +35,6 @@ public class Main {
 
         //  mujInd = new Individual();
     }
-
-//    public static ArrayList<Integer> CopyArray(ArrayList<Integer> source) {
-//
-//        ArrayList<Integer> target = new ArrayList<>();
-//
-//        for (int i = 0; i < source.size(); i++) {
-//            target.add(new Integer(source.get(i)));
-//        }
-//        return target;
-//    }
 
     static void readInput() {
 
@@ -89,27 +79,16 @@ public class Main {
 
     }
 
-    static Individual krizeniOnePoint(Individual a, Individual b) {
+    static Individual krizeni(Individual a, Individual b) {
 
         Individual c = new Individual();
-        Individual e,f;
-
-        double rand = Math.random();
-
-        if(rand > 0.5){
-            e = a;
-            f = b;
-        } else {
-            e = b;
-            f = a;
-        }
 
         for (int i = 0; i < vyska / 2; i++) {
-            c.velikostiMezer.add(new ArrayList<>(e.velikostiMezer.get(i)));
+            c.velikostiMezer.add(new ArrayList<>(a.velikostiMezer.get(i)));
         }
 
         for (int i = vyska / 2; i < vyska; i++) {
-            c.velikostiMezer.add(new ArrayList<>(f.velikostiMezer.get(i)));
+            c.velikostiMezer.add(new ArrayList<>(b.velikostiMezer.get(i)));
         }
 
         c.vyplnCelouTajenkuPodleLegendyAMezer();
@@ -118,16 +97,16 @@ public class Main {
 
     }
 
-    static Individual krizeni(Individual a, Individual b) {
+    static Individual krizeni2(Individual a, Individual b) {
 
         Individual c = new Individual();
         Individual swap;
 
-        int velikostBloku = (int)(Math.random()* (vyska / 2.0)-1) +1;
+        int velikostBloku = (int) (Math.random() * (vyska / 2.0) - 1) + 2;
 
         for (int i = 0; i < vyska; i++) {
 
-            if(i % velikostBloku == 0){
+            if (i % velikostBloku == 0) {
                 swap = a;
                 a = b;
                 b = swap;
@@ -138,7 +117,6 @@ public class Main {
         c.vyplnCelouTajenkuPodleLegendyAMezer();
 
         return c;
-
     }
 
     public static void statistiky(ArrayList<Individual> populace, int generace) {
@@ -162,21 +140,7 @@ public class Main {
 
         prumernyFitness = suma / populace.size();
 
-        System.out.println("Generace " + generace +  " Prumer " + prumernyFitness + " nejlepsi " + nejvyssiFitness + " nejhorsi " + nejnizsiFitness + " velikost " + populace.size());
-
-    }
-
-    public static int biggestOfThree(int a, int b, int c) {
-
-        if (a < b) {
-            a = b;
-        }
-
-        if (a > c) {
-            return a;
-        }
-        return c;
-
+        System.out.println("Generace " + generace + "   Prumer: " + prumernyFitness + "   NEJLEPSI: " + nejvyssiFitness + "    Nejhorsi: " + nejnizsiFitness + "    Velikost: " + populace.size());
     }
 
     public static Set<Individual> selectParents(ArrayList<Individual> populace) {
@@ -197,7 +161,7 @@ public class Main {
         return rodice;
     }
 
-    public static ArrayList<Individual> initPopulation(){
+    public static ArrayList<Individual> initPopulation() {
 
         ArrayList<Individual> p = new ArrayList<>();
 
@@ -230,9 +194,6 @@ public class Main {
         readInput();
         initializeVariables();
 
-        //  int restartu = 0;
-        //  int iteraci = 0;
-
         ArrayList<Individual> populace = initPopulation();
 
         ////////////// VIVA LA EVOLUCION
@@ -257,58 +218,56 @@ public class Main {
 
             for (int i = 1; i < velikostPopulace; i++) {
 
-                if(Math.random() > 0.8) continue;
+                //   if(Math.random() > 0.8) continue;
 
                 offspring.add(
                         krizeni(nejlepsiBorec, populace.get(i)));
             }
 
-            // zmutuju vsechny deti
-            for (Individual dite : offspring){
+            offspring.add(nejlepsiBorec);
 
-                dite.vyplnCelouTajenkuPodleLegendyAMezer();
+            // zmutuju vsechny deti
+            for (Individual dite : offspring) {
+
                 dite.spoctiANastavFitness();
 
-                if(dite.fitness == 0 ) {
-                    System.out.println("** MAM RESENI v generaci " + g );
+                if (dite.fitness == 0) {
+                    System.out.println("** MAM RESENI v generaci " + g);
                     dite.printPole();
                     return;
                 }
 
                 //do
-                    dite.zmutujRadek();
-               // while (isInTabu(dite));
+                dite.zmutujRadek();
+                // while (isInTabu(dite));
 
                 dite.spoctiANastavFitness();
 
             }
 
-           // if(!isInTabu(nejlepsiBorec)){
-                offspring.add(nejlepsiBorec);
-           // }else System.out.println("TABU HIT borec");
-
-           // offspring.add(nejlepsiBorec);
-          //  populace.addAll(offspring);
+            // if(!isInTabu(nejlepsiBorec)){
+            //     offspring.add(nejlepsiBorec);
+            // }else System.out.println("TABU HIT borec");
 
             populace = offspring;
 
             Collections.sort(populace);
 
-            if(offspring.get(0).fitness == 0 ) {
-                System.out.println("MAM RESENI v generaci " + g );
+            if (offspring.get(0).fitness == 0) {
+                System.out.println("MAM RESENI v generaci " + g);
                 offspring.get(0).printPole();
                 return;
             }
 
 
-            for (int i = populace.size() -1 ; i >= velikostPopulace; i--) {
+            for (int i = populace.size() - 1; i >= velikostPopulace; i--) {
                 populace.remove(i);
             }
 
-           if(g%100 == 0) {
-               statistiky(populace, g);
-               System.out.println();
-           }
+            if (g % 100 == 0) {
+                statistiky(populace, g);
+                System.out.println();
+            }
         }
 
 //        while (true) {
@@ -381,11 +340,16 @@ public class Main {
 
         Integer tabuKolik = tabu.get(dite.velikostiMezer);
 
-        if(tabuKolik == null){ tabu.put(dite.velikostiMezer, 0 ); tabuKolik = 0;}
+        if (tabuKolik == null) {
+            tabu.put(dite.velikostiMezer, 0);
+            tabuKolik = 0;
+        }
 
-        if(tabuKolik > 30 ){return true;}
+        if (tabuKolik > 30) {
+            return true;
+        }
 
-        tabu.put(dite.velikostiMezer, tabuKolik + 1 );
+        tabu.put(dite.velikostiMezer, tabuKolik + 1);
 
         return false;
     }
