@@ -279,8 +279,8 @@ public class Individual implements  Comparable<Individual>{
 
         if (mezeryKtereMenim.size() <= 1) return;
 
-        // int kolikrat = (int) (Math.random() * (3 + Main.iteraciBezZlepseni / 20)) + 2;
-        int kolikrat = mezeryKtereMenim.size();
+         int kolikrat = (int) (Math.random() *( mezeryKtereMenim.size()-1)) + 1;
+        //int kolikrat = mezeryKtereMenim.size()/2;
 
         for (int l = 0; l < kolikrat; l++) {
             prehodJednumezeruVJednomRadku(zmenenyRadek, mezeryKtereMenim);
