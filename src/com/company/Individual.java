@@ -13,8 +13,10 @@ public class Individual implements  Comparable<Individual>{
 
     ArrayList<ArrayList<Integer>> velikostiMezer;
     //Integer ZmenenyRadek;
+
     boolean[][] tajenka;
     int fitness;
+
     //int nejlepsiFitnessEver;
     //int fitnessKandidata;
 

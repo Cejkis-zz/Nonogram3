@@ -79,15 +79,18 @@ public class Main {
 
     }
 
-    static Individual krizeni(Individual a, Individual b) {
+    static Individual krizeni1(Individual a, Individual b) {
 
         Individual c = new Individual();
 
-        for (int i = 0; i < vyska / 2; i++) {
+
+        int bodZlomu =(int)( Math.random() * vyska - 2 ) + 1;
+
+        for (int i = 0; i < bodZlomu; i++) {
             c.velikostiMezer.add(new ArrayList<>(a.velikostiMezer.get(i)));
         }
 
-        for (int i = vyska / 2; i < vyska; i++) {
+        for (int i = bodZlomu; i < vyska; i++) {
             c.velikostiMezer.add(new ArrayList<>(b.velikostiMezer.get(i)));
         }
 
@@ -97,7 +100,7 @@ public class Main {
 
     }
 
-    static Individual krizeni2(Individual a, Individual b) {
+    static Individual krizeni(Individual a, Individual b) {
 
         Individual c = new Individual();
         Individual swap;
@@ -209,22 +212,16 @@ public class Main {
             // vytvorim deti - dva nahodni rodice
             ArrayList<Individual> offspring = new ArrayList<>();
 
+            // deti nahodnych rodicu vybranych tournament metodou
             for (int i = 0; i < pocetDeti; i++) {
-
                 offspring.add(
                         krizeni(rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size())),
                                 rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size()))));
             }
 
-            for (int i = 1; i < velikostPopulace; i++) {
-
-                //   if(Math.random() > 0.8) continue;
-
-                offspring.add(
-                        krizeni(nejlepsiBorec, populace.get(i)));
-            }
-
-            offspring.add(nejlepsiBorec);
+//            for (int i = 1; i < velikostPopulace; i++) {
+//                offspring.add(krizeni(nejlepsiBorec, populace.get(i)));
+//            }
 
             // zmutuju vsechny deti
             for (Individual dite : offspring) {
@@ -237,19 +234,24 @@ public class Main {
                     return;
                 }
 
-                //do
+                if(Math.random() > 0.5) continue; // nemutuju vsechny.
+
                 dite.zmutujRadek();
-                // while (isInTabu(dite));
-
                 dite.spoctiANastavFitness();
-
             }
 
-            // if(!isInTabu(nejlepsiBorec)){
-            //     offspring.add(nejlepsiBorec);
-            // }else System.out.println("TABU HIT borec");
+            // nahodne zmutuju cast populace - nekrizim
+            for (Individual i : populace){
+                if(i!= nejlepsiBorec && Math.random() > 0.5){
+                    i.zmutujRadek();
+                    i.spoctiANastavFitness();
+                    offspring.add(i);
+                }
+            }
 
-            populace = offspring;
+            offspring.add(nejlepsiBorec);
+
+            populace = (offspring);
 
             Collections.sort(populace);
 
@@ -258,7 +260,6 @@ public class Main {
                 offspring.get(0).printPole();
                 return;
             }
-
 
             for (int i = populace.size() - 1; i >= velikostPopulace; i--) {
                 populace.remove(i);
