@@ -288,7 +288,7 @@ public class Individual implements  Comparable<Individual>{
             prehodJednumezeruVJednomRadku(zmenenyRadek, mezeryKtereMenim);
         }
 
-        // vypln tajenku a spocti fitness
+        // vypln tajenku
         VyplnRadekTajenky(zmenenyRadek, mezeryKtereMenim);
 
 

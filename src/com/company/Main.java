@@ -201,7 +201,7 @@ public class Main {
 
         ////////////// VIVA LA EVOLUCION
 
-        for (int g = 0; g < 10000; g++) {
+        for (int g = 0; g < 20000; g++) {
 
             // vyselektuju rodice
             ArrayList<Individual> rodiceAsArray = new ArrayList<>(selectParents(populace));
@@ -215,13 +215,14 @@ public class Main {
             // deti nahodnych rodicu vybranych tournament metodou
             for (int i = 0; i < pocetDeti; i++) {
                 offspring.add(
-                        krizeni(rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size())),
+                        krizeni1(rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size())),
                                 rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size()))));
             }
 
-//            for (int i = 1; i < velikostPopulace; i++) {
-//                offspring.add(krizeni(nejlepsiBorec, populace.get(i)));
-//            }
+            for (int i = 1; i < velikostPopulace; i++) {
+                if(Math.random() > 0.90)
+                offspring.add(krizeni1(nejlepsiBorec, populace.get(i)));
+            }
 
             // zmutuju vsechny deti
             for (Individual dite : offspring) {
@@ -234,7 +235,7 @@ public class Main {
                     return;
                 }
 
-                if(Math.random() > 0.5) continue; // nemutuju vsechny.
+                if(Math.random() > 0.9) continue; // nemutuju vsechny.
 
                 dite.zmutujRadek();
                 dite.spoctiANastavFitness();
@@ -242,7 +243,7 @@ public class Main {
 
             // nahodne zmutuju cast populace - nekrizim
             for (Individual i : populace){
-                if(i!= nejlepsiBorec && Math.random() > 0.5){
+                if(i!= nejlepsiBorec && Math.random() > 0.8){
                     i.zmutujRadek();
                     i.spoctiANastavFitness();
                     offspring.add(i);
@@ -250,7 +251,6 @@ public class Main {
             }
 
             offspring.add(nejlepsiBorec);
-
             populace = (offspring);
 
             Collections.sort(populace);
