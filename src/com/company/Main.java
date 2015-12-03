@@ -20,11 +20,10 @@ public class Main {
 
     static String jmenoVstupu = "25x20.txt";
 
-    static HashMap<ArrayList<ArrayList<Integer>>, Integer> tabu = new HashMap<>();
-
-    static int velikostPopulace = 100;
-    static int velikostSelekce = 50;
-    static int pocetDeti = 100;
+    static int velikostPopulace = 200;
+    static int velikostSelekce = 60;
+    static int pocetDeti = 200;
+    static double pravdepodobnostKrizenisBorcem = 0.2;
 
     public static void initializeVariables() {
 
@@ -79,12 +78,11 @@ public class Main {
 
     }
 
-    static Individual krizeni1(Individual a, Individual b) {
+    static Individual krizeni(Individual a, Individual b) {
 
         Individual c = new Individual();
 
-
-        int bodZlomu =(int)( Math.random() * vyska - 2 ) + 1;
+        int bodZlomu = (int) (Math.random() * vyska - 2) + 1;
 
         for (int i = 0; i < bodZlomu; i++) {
             c.velikostiMezer.add(new ArrayList<>(a.velikostiMezer.get(i)));
@@ -97,10 +95,9 @@ public class Main {
         c.vyplnCelouTajenkuPodleLegendyAMezer();
 
         return c;
-
     }
 
-    static Individual krizeni(Individual a, Individual b) {
+    static Individual krizeni2(Individual a, Individual b) {
 
         Individual c = new Individual();
         Individual swap;
@@ -143,7 +140,7 @@ public class Main {
 
         prumernyFitness = suma / populace.size();
 
-        System.out.println("Generace " + generace + "   Prumer: " + prumernyFitness + "   NEJLEPSI: " + nejvyssiFitness + "    Nejhorsi: " + nejnizsiFitness + "    Velikost: " + populace.size());
+        System.out.println("Generace ;" + generace + ";     Prumer: ;" + prumernyFitness + ";     NEJLEPSI:; " + nejvyssiFitness + ";     Nejhorsi:; " + nejnizsiFitness);
     }
 
     public static Set<Individual> selectParents(ArrayList<Individual> populace) {
@@ -195,13 +192,15 @@ public class Main {
         levaLegenda = new ArrayList<>(vyska);
 
         readInput();
+
+
         initializeVariables();
 
         ArrayList<Individual> populace = initPopulation();
 
         ////////////// VIVA LA EVOLUCION
 
-        for (int g = 0; g < 20000; g++) {
+        for (int g = 0; g < 10000; g++) {
 
             // vyselektuju rodice
             ArrayList<Individual> rodiceAsArray = new ArrayList<>(selectParents(populace));
@@ -215,13 +214,13 @@ public class Main {
             // deti nahodnych rodicu vybranych tournament metodou
             for (int i = 0; i < pocetDeti; i++) {
                 offspring.add(
-                        krizeni1(rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size())),
+                        krizeni(rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size())),
                                 rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size()))));
             }
 
             for (int i = 1; i < velikostPopulace; i++) {
-                if(Math.random() > 0.90)
-                offspring.add(krizeni1(nejlepsiBorec, populace.get(i)));
+                if (Math.random() < pravdepodobnostKrizenisBorcem)
+                    offspring.add(krizeni(nejlepsiBorec, populace.get(i)));
             }
 
             // zmutuju vsechny deti
@@ -229,21 +228,21 @@ public class Main {
 
                 dite.spoctiANastavFitness();
 
-                if (dite.fitness == 0) {
-                    System.out.println("** MAM RESENI v generaci " + g);
-                    dite.printPole();
-                    return;
-                }
+//                    if (dite.fitness == 0) {
+//                        System.out.println("** MAM RESENI v generaci " + g);
+//                        dite.printPole();
+//                        return;
+//                    }
 
-                if(Math.random() > 0.9) continue; // nemutuju vsechny.
+                if (Math.random() < 0.1) continue; // nemutuju vsechny.
 
                 dite.zmutujRadek();
                 dite.spoctiANastavFitness();
             }
 
             // nahodne zmutuju cast populace - nekrizim
-            for (Individual i : populace){
-                if(i!= nejlepsiBorec && Math.random() > 0.8){
+            for (Individual i : populace) {
+                if (i != nejlepsiBorec && Math.random() < 0.2) {
                     i.zmutujRadek();
                     i.spoctiANastavFitness();
                     offspring.add(i);
@@ -269,7 +268,10 @@ public class Main {
                 statistiky(populace, g);
                 System.out.println();
             }
+
+
         }
+
 
 //        while (true) {
 //
@@ -277,7 +279,6 @@ public class Main {
 //
 //            System.out.println("soucasny fitness:" + mujInd.soucasnyFitness);
 //            mujInd.fitnessKandidata = mujInd.soucasnyFitness;
-//
 //
 //            // opakovani optimalizace
 //            for (int p = 0; p < 300000 * nasobekIteraci; p++) {
@@ -337,21 +338,5 @@ public class Main {
 //        }
     }
 
-    private static boolean isInTabu(Individual dite) {
 
-        Integer tabuKolik = tabu.get(dite.velikostiMezer);
-
-        if (tabuKolik == null) {
-            tabu.put(dite.velikostiMezer, 0);
-            tabuKolik = 0;
-        }
-
-        if (tabuKolik > 30) {
-            return true;
-        }
-
-        tabu.put(dite.velikostiMezer, tabuKolik + 1);
-
-        return false;
-    }
 }
