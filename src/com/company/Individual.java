@@ -12,13 +12,10 @@ import java.util.Collections;
 public class Individual implements  Comparable<Individual>{
 
     ArrayList<ArrayList<Integer>> velikostiMezer;
-    //Integer ZmenenyRadek;
+
 
     boolean[][] tajenka;
     int fitness;
-
-    //int nejlepsiFitnessEver;
-    //int fitnessKandidata;
 
     public Individual() {
 
@@ -349,4 +346,114 @@ public class Individual implements  Comparable<Individual>{
     public int compareTo(Individual individual) {
         return individual.fitness - fitness;
     }
+
+
+
+    //////////
+
+
+    int nejlepsiFitnessEver = -1000;
+    int fitnessKandidata;
+  //  int soucasnyFitness;
+    int nasobekIteraci = 10;
+
+    ArrayList<Integer> nejlepsiMezery;
+    Integer ZmenenyRadek;
+
+    static int iteraciBezZlepseni;
+
+    public boolean myFuckingFunction(){
+
+        fitness = spoctiFitness();
+       // System.out.println(" fitness:" + fitness);
+        fitnessKandidata = fitness;
+
+        iteraciBezZlepseni = 0;
+
+        // opakovani optimalizace
+        for (int p = 0; p < 10000 * nasobekIteraci; p++) {
+
+            prehazimMezery();
+
+            if ((fitnessKandidata >= fitness - 2  && fitnessKandidata >= nejlepsiFitnessEver - 4  && fitnessKandidata < -20 )
+                    || (fitnessKandidata >= fitness - 2  && fitnessKandidata >= nejlepsiFitnessEver -2  && fitnessKandidata < -4 )
+                    || (fitnessKandidata >= -4 && fitnessKandidata >= fitness)
+                    ) {
+
+                if (fitnessKandidata > fitness)
+                    iteraciBezZlepseni = 0;
+
+                if(fitnessKandidata > nejlepsiFitnessEver){
+                    nejlepsiFitnessEver = fitnessKandidata;
+                }
+
+                if (nejlepsiMezery != null) {
+                    velikostiMezer.set(ZmenenyRadek, new ArrayList<Integer>(nejlepsiMezery));
+                    VyplnRadekTajenky(ZmenenyRadek, velikostiMezer.get(ZmenenyRadek));
+                    fitness = fitnessKandidata;
+                }
+
+                if (fitnessKandidata == 0) {
+                    System.out.println("MAM SPRAVNY NONOGRAM!!!");
+                    break;
+                }
+
+            } else if (iteraciBezZlepseni < 200)
+                iteraciBezZlepseni++;
+
+
+            if (p % 1000 == 0) {
+              //  System.out.println(p + ". KOLO. fitness: "
+                //        + fitness + " Iteraci bez zlepseni " + iteraciBezZlepseni);
+            }
+
+            if ((p > 50000 * nasobekIteraci && fitness < -40) ||
+                    (p > 75000 * nasobekIteraci && fitness < -30) ||
+                    (p > 150000 * nasobekIteraci && fitness < -20)) {
+             //   System.out.println();
+             //   System.out.println();
+                break;
+            }
+
+        }
+
+        if (fitnessKandidata == 0) {
+            printPole();
+            return true;
+        }
+
+        return false;
+
+    }
+
+    public void prehazimMezery() {
+
+        ZmenenyRadek = (int) (Math.random() * Main.vyska);
+
+        ArrayList<Integer> mezeryKtereMenim =velikostiMezer.get(ZmenenyRadek);
+
+        ArrayList<Integer> zalohaMezer = new ArrayList<>(velikostiMezer.get(ZmenenyRadek));
+
+
+        if(mezeryKtereMenim.size() == 1) return;
+
+        int kolikrat = (int)(Math.random() * (3 + iteraciBezZlepseni/20) ) + 2;
+
+        // kolikrat prehazim mezery v ramci jednoho radku
+        for (int l = 0; l < kolikrat; l++) {
+            prehodJednumezeruVJednomRadku(ZmenenyRadek, mezeryKtereMenim);
+        }
+
+        // vypln tajenku a spocti fitness
+        VyplnRadekTajenky(ZmenenyRadek, mezeryKtereMenim);
+        fitnessKandidata = spoctiFitness();
+
+        nejlepsiMezery = mezeryKtereMenim;
+
+        // vrat puvodni hodnoty
+        velikostiMezer.set(ZmenenyRadek, zalohaMezer);
+        VyplnRadekTajenky(ZmenenyRadek, zalohaMezer);
+
+    }
+
 }

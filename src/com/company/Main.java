@@ -6,17 +6,11 @@ import java.util.*;
 
 public class Main {
 
-
     static ArrayList<ArrayList<Integer>> horniLegenda;
     static ArrayList<ArrayList<Integer>> levaLegenda;
 
-    //  static ArrayList<Integer> nejlepsiMezery;
-
-    //  static int nasobekIteraci = 8;
-
     static int vyska, sirka;
 
-    static int iteraciBezZlepseni;
 
     static String jmenoVstupu = "25x20.txt";
 
@@ -26,8 +20,6 @@ public class Main {
     static double pravdepodobnostKrizenisBorcem = 0.2;
 
     public static void initializeVariables() {
-
-        iteraciBezZlepseni = 10;
 
         sirka = horniLegenda.size();
         vyska = levaLegenda.size();
@@ -198,6 +190,7 @@ public class Main {
 
         ArrayList<Individual> populace = initPopulation();
 
+        long startTime = System.nanoTime();
         ////////////// VIVA LA EVOLUCION
 
         for (int g = 0; g < 10000; g++) {
@@ -208,6 +201,11 @@ public class Main {
             // nejlepsiho jedince zachovam
             Individual nejlepsiBorec = populace.get(0);
 
+            if(g%100 == 99) {
+                System.out.println("nej pred " + nejlepsiBorec.fitness);
+                nejlepsiBorec.myFuckingFunction();
+                System.out.println("nej po " + nejlepsiBorec.fitness);
+            }
             // vytvorim deti - dva nahodni rodice
             ArrayList<Individual> offspring = new ArrayList<>();
 
@@ -257,6 +255,9 @@ public class Main {
             if (offspring.get(0).fitness == 0) {
                 System.out.println("MAM RESENI v generaci " + g);
                 offspring.get(0).printPole();
+
+                System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
+
                 return;
             }
 
