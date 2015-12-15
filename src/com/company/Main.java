@@ -11,13 +11,15 @@ public class Main {
 
     static int vyska, sirka;
 
-
-    static String jmenoVstupu = "25x20.txt";
+    static int fitnessCounted = 0;
+    static String jmenoVstupu = "40x30.txt";
 
     static int velikostPopulace = 200;
     static int velikostSelekce = 60;
     static int pocetDeti = 200;
-    static double pravdepodobnostKrizenisBorcem = 0.2;
+    static double pravdepodobnostKrizenisBorcem = 0.3;
+    static double pravdpodobnostMutace = 0.2;
+    static double pravdepodobnostMutaceDitete = 0.1;
 
     public static void initializeVariables() {
 
@@ -160,7 +162,6 @@ public class Main {
         for (int i = 0; i < velikostPopulace; i++) {
 
             Individual j = new Individual();
-            j.basicInit();
 
             for (int k = 0; k < vyska; k++) {
                 j.zmutujRadek();
@@ -185,15 +186,14 @@ public class Main {
 
         readInput();
 
-
         initializeVariables();
 
         ArrayList<Individual> populace = initPopulation();
-
+        Collections.sort(populace);
         long startTime = System.nanoTime();
         ////////////// VIVA LA EVOLUCION
 
-        for (int g = 0; g < 10000; g++) {
+        for (int g = 0; g < 100000; g++) {
 
             // vyselektuju rodice
             ArrayList<Individual> rodiceAsArray = new ArrayList<>(selectParents(populace));
@@ -201,11 +201,16 @@ public class Main {
             // nejlepsiho jedince zachovam
             Individual nejlepsiBorec = populace.get(0);
 
-            if(g%100 == 99) {
+            if(g%30 == 29) {
                 System.out.println("nej pred " + nejlepsiBorec.fitness);
-                nejlepsiBorec.myFuckingFunction();
+
+                //nejlepsiBorec = nejlepsiBorec.localOptimalization();
+
+                nejlepsiBorec.localOptimalization2();
                 System.out.println("nej po " + nejlepsiBorec.fitness);
+
             }
+
             // vytvorim deti - dva nahodni rodice
             ArrayList<Individual> offspring = new ArrayList<>();
 
@@ -231,16 +236,15 @@ public class Main {
 //                        dite.printPole();
 //                        return;
 //                    }
-
-                if (Math.random() < 0.1) continue; // nemutuju vsechny.
+                if (Math.random() < pravdepodobnostMutaceDitete) continue; // nemutuju vsechny.
 
                 dite.zmutujRadek();
                 dite.spoctiANastavFitness();
             }
 
-            // nahodne zmutuju cast populace - nekrizim
+            // nahodne zmutuju cast stare populace  - nekrizim
             for (Individual i : populace) {
-                if (i != nejlepsiBorec && Math.random() < 0.2) {
+                if (i != nejlepsiBorec && Math.random() < pravdpodobnostMutace) {
                     i.zmutujRadek();
                     i.spoctiANastavFitness();
                     offspring.add(i);
@@ -255,17 +259,14 @@ public class Main {
             if (offspring.get(0).fitness == 0) {
                 System.out.println("MAM RESENI v generaci " + g);
                 offspring.get(0).printPole();
-
-                System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
-
-                return;
+                break;
             }
 
             for (int i = populace.size() - 1; i >= velikostPopulace; i--) {
                 populace.remove(i);
             }
 
-            if (g % 100 == 0) {
+            if (g % 50 == 0) {
                 statistiky(populace, g);
                 System.out.println();
             }
@@ -273,6 +274,8 @@ public class Main {
 
         }
 
+        System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
+        System.out.println("fitness spocteno " + fitnessCounted);
 
 //        while (true) {
 //
