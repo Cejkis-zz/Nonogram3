@@ -20,7 +20,6 @@ public class Individual implements  Comparable<Individual>{
 
         tajenka = new boolean[Main.vyska][Main.sirka];
         velikostiMezer = new ArrayList<>();
-        basicInit();
 
     }
 
@@ -126,7 +125,11 @@ public class Individual implements  Comparable<Individual>{
 
     // spocte sumu needlemanu vsech sloupcu
     public int spoctiFitness() {
+
+        if(Main.fitnessCounted % 100000 == 0)Main.statistiky(Main.populace);
+
         Main.fitnessCounted ++;
+
         int suma = 0;
 
         for (int i = 0; i < Main.sirka; i++) {
@@ -293,12 +296,7 @@ public class Individual implements  Comparable<Individual>{
 
         if (mezeryKtereMenim.size() <= 1) return;
 
-         int kolikrat = (int) (Math.random() *( mezeryKtereMenim.size()-1)) + 1;
-        //int kolikrat = mezeryKtereMenim.size()/2;
-
-        for (int l = 0; l < kolikrat; l++) {
-            prehodJednumezeruVJednomRadku(zmenenyRadek, mezeryKtereMenim);
-        }
+        prehodJednumezeruVJednomRadku(zmenenyRadek, mezeryKtereMenim);
 
         // vypln tajenku
         VyplnRadekTajenky(zmenenyRadek, mezeryKtereMenim);
@@ -352,59 +350,62 @@ public class Individual implements  Comparable<Individual>{
     //////////
 
     int nejlepsiFitnessEver;
-    int fitnessKandidata;
+   // int fitnessKandidata;
 
     ArrayList<Integer> nejlepsiMezery;
     Integer ZmenenyRadek;
 
+    ArrayList<Integer> zalohaMezer;
+
     static int iteraciBezZlepseni;
 
-    public Individual localOptimalization(){
+    public Individual localOptimalization(int numberOfOptimalization){
 
         nejlepsiFitnessEver = fitness;
-        fitnessKandidata = fitness;
+       // fitnessKandidata = fitness;
         int tolerance = 6;
         if(nejlepsiFitnessEver  >= -60 ) tolerance = 4;
         if(nejlepsiFitnessEver  >= -26 ) tolerance = 2;
-        if(nejlepsiFitnessEver  >= -6 ) tolerance = 0;
+        if(nejlepsiFitnessEver  >= -2 ) tolerance = 0;
 
         Individual nejlepsi = new Individual(this);
 
         // opakovani optimalizace
-        for (int p = 0; p < 30000; p++) {
+        for (int p = 0; p < numberOfOptimalization; p++) {
 
             prehazimMezery();
 
-            if ( fitnessKandidata >= nejlepsiFitnessEver - tolerance) {
+            if ( fitness >= nejlepsiFitnessEver - tolerance) {
 
-                if(fitness > nejlepsi.fitness || (fitness == nejlepsi.fitness && nejlepsi == this) ){
+                if(fitness >= nejlepsi.fitness  ){
                     nejlepsi = new Individual(this);
                 }
 
                 if(nejlepsiFitnessEver  >= -60 ) tolerance = 4;
                 if(nejlepsiFitnessEver  >= -26 ) tolerance = 2;
-                if(nejlepsiFitnessEver  >= -4 ) tolerance = 0;
+                if(nejlepsiFitnessEver  >= -2 ) tolerance = 0;
 
-                if (fitnessKandidata > fitness)
-                    iteraciBezZlepseni = 0;
 
-                if(fitnessKandidata > nejlepsiFitnessEver){
-                    nejlepsiFitnessEver = fitnessKandidata;
+                if(fitness > nejlepsiFitnessEver){
+                    nejlepsiFitnessEver = fitness;
                 }
 
-                if (nejlepsiMezery != null) {
-                    velikostiMezer.set(ZmenenyRadek, new ArrayList<Integer>(nejlepsiMezery));
-                    VyplnRadekTajenky(ZmenenyRadek, velikostiMezer.get(ZmenenyRadek));
-                    fitness = fitnessKandidata;
+//                if (nejlepsiMezery != null) {
+//                    velikostiMezer.set(ZmenenyRadek, new ArrayList<Integer>(nejlepsiMezery));
+//                    VyplnRadekTajenky(ZmenenyRadek, velikostiMezer.get(ZmenenyRadek));
+//                    fitness = fitnessKandidata;
+//                }
+
+                if (fitness == 0) {
+                    System.out.println("MAM SPRAVNY NONOGRAM - optimalizace!!!");
+                    return this;
                 }
 
-                if (fitnessKandidata == 0) {
-                    System.out.println("MAM SPRAVNY NONOGRAM!!!");
-                    break;
-                }
-
-            } else if (iteraciBezZlepseni < 200)
-                iteraciBezZlepseni++;
+            }else{
+                // vrat puvodni hodnoty
+                velikostiMezer.set(ZmenenyRadek, zalohaMezer);
+                VyplnRadekTajenky(ZmenenyRadek, zalohaMezer);
+            }
 
 //            if (p % 1000 == 0) {
 //                System.out.println(p + ". KOLO. fitness: "
@@ -416,74 +417,6 @@ public class Individual implements  Comparable<Individual>{
         return nejlepsi;
     }
 
-    public boolean localOptimalization2(){
-
-        System.out.println(this);
-
-        nejlepsiFitnessEver = fitness;
-        fitnessKandidata = fitness;
-        int tolerance = 6;
-        if(nejlepsiFitnessEver  >= -60 ) tolerance = 4;
-        if(nejlepsiFitnessEver  >= -26 ) tolerance = 2;
-        if(nejlepsiFitnessEver  >= -6 ) tolerance = 0;
-
-        // opakovani optimalizace
-        for (int p = 0; p < 30000; p++) {
-
-            prehazimMezery();
-
-            if ( fitnessKandidata >= nejlepsiFitnessEver - tolerance) {
-
-                if(nejlepsiFitnessEver  >= -60 ) tolerance = 4;
-                if(nejlepsiFitnessEver  >= -26 ) tolerance = 2;
-                if(nejlepsiFitnessEver  >= -6 ) tolerance = 0;
-
-                if (fitnessKandidata > fitness)
-                    iteraciBezZlepseni = 0;
-
-                if(fitnessKandidata > nejlepsiFitnessEver){
-                    nejlepsiFitnessEver = fitnessKandidata;
-                }
-
-                if (nejlepsiMezery != null) {
-                    velikostiMezer.set(ZmenenyRadek, new ArrayList<Integer>(nejlepsiMezery));
-                    VyplnRadekTajenky(ZmenenyRadek, velikostiMezer.get(ZmenenyRadek));
-                    fitness = fitnessKandidata;
-                }
-
-                if (fitnessKandidata == 0) {
-                    System.out.println("MAM SPRAVNY NONOGRAM!!!");
-                    break;
-                }
-
-            } else if (iteraciBezZlepseni < 200)
-                iteraciBezZlepseni++;
-
-
-//            if (p % 1000 == 0) {
-//                System.out.println(p + ". KOLO. fitness: "
-//                        + fitness + " Iteraci bez zlepseni " + iteraciBezZlepseni);
-//            }
-
-//            if ((p > 50000 * nasobekIteraci && fitness < -40) ||
-//                    (p > 75000 * nasobekIteraci && fitness < -30) ||
-//                    (p > 150000 * nasobekIteraci && fitness < -20)) {
-//                System.out.println();
-//                System.out.println();
-//                break;
-//            }
-
-        }
-        // System.out.println("ok");
-
-        if (fitnessKandidata == 0) {
-            printPole();
-            return true;
-        }
-
-        return false;
-
-    }
 
     public void prehazimMezery() {
 
@@ -491,8 +424,7 @@ public class Individual implements  Comparable<Individual>{
 
         ArrayList<Integer> mezeryKtereMenim =velikostiMezer.get(ZmenenyRadek);
 
-        ArrayList<Integer> zalohaMezer = new ArrayList<>(velikostiMezer.get(ZmenenyRadek));
-
+        zalohaMezer = new ArrayList<>(velikostiMezer.get(ZmenenyRadek));
 
         if(mezeryKtereMenim.size() == 1) return;
 
@@ -505,13 +437,8 @@ public class Individual implements  Comparable<Individual>{
 
         // vypln tajenku a spocti fitness
         VyplnRadekTajenky(ZmenenyRadek, mezeryKtereMenim);
-        fitnessKandidata = spoctiFitness();
-
+        fitness = spoctiFitness();
         nejlepsiMezery = mezeryKtereMenim;
-
-        // vrat puvodni hodnoty
-        velikostiMezer.set(ZmenenyRadek, zalohaMezer);
-        VyplnRadekTajenky(ZmenenyRadek, zalohaMezer);
 
     }
 

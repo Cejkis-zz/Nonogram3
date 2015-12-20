@@ -12,14 +12,21 @@ public class Main {
     static int vyska, sirka;
 
     static int fitnessCounted = 0;
-    static String jmenoVstupu = "40x30.txt";
+    static String jmenoVstupu = "25x20.txt";
 
     static int velikostPopulace = 200;
     static int velikostSelekce = 60;
     static int pocetDeti = 200;
-    static double pravdepodobnostKrizenisBorcem = 0.3;
-    static double pravdpodobnostMutace = 0.2;
-    static double pravdepodobnostMutaceDitete = 0.1;
+
+//    static double pravdepodobnostKrizenisBorcem = 0.3;
+//    static double pravdpodobnostMutaceRodice = 0.2;
+//    static double pravdepodobnostMutaceDitete = 0.1;
+
+    static double pravdepodobnostKrizenisBorcem = 0.5;
+    static double pravdpodobnostMutaceRodice = 0.5;
+    static double pravdepodobnostMutaceDitete = 0.8;
+
+   static public ArrayList<Individual> populace;
 
     public static void initializeVariables() {
 
@@ -113,7 +120,7 @@ public class Main {
         return c;
     }
 
-    public static void statistiky(ArrayList<Individual> populace, int generace) {
+    public static void statistiky(ArrayList<Individual> populace) {
 
         double prumernyFitness;
         int nejvyssiFitness = populace.get(0).fitness;
@@ -132,9 +139,10 @@ public class Main {
             }
         }
 
-        prumernyFitness = suma / populace.size();
+        prumernyFitness = suma / (double)populace.size();
 
-        System.out.println("Generace ;" + generace + ";     Prumer: ;" + prumernyFitness + ";     NEJLEPSI:; " + nejvyssiFitness + ";     Nejhorsi:; " + nejnizsiFitness);
+        System.out.println("Ohodnoceni;" + fitnessCounted + ";NEJLEPSI; " + nejvyssiFitness);
+
     }
 
     public static Set<Individual> selectParents(ArrayList<Individual> populace) {
@@ -162,6 +170,7 @@ public class Main {
         for (int i = 0; i < velikostPopulace; i++) {
 
             Individual j = new Individual();
+            j.basicInit();
 
             for (int k = 0; k < vyska; k++) {
                 j.zmutujRadek();
@@ -186,160 +195,112 @@ public class Main {
 
         readInput();
 
-        initializeVariables();
+        for (int iterace = 0; iterace < 20 ; iterace++) {
+            fitnessCounted = 5000; // workaround
+            System.out.println();
+            System.out.println("reseni cislo " + iterace);
 
-        ArrayList<Individual> populace = initPopulation();
-        Collections.sort(populace);
-        long startTime = System.nanoTime();
-        ////////////// VIVA LA EVOLUCION
+            initializeVariables();
 
-        for (int g = 0; g < 100000; g++) {
+            populace = initPopulation();
+            Collections.sort(populace);
+            long startTime = System.nanoTime();
 
-            // vyselektuju rodice
-            ArrayList<Individual> rodiceAsArray = new ArrayList<>(selectParents(populace));
+            fitnessCounted = 0;
 
-            // nejlepsiho jedince zachovam
-            Individual nejlepsiBorec = populace.get(0);
+            //// VIVA LA EVOLUCION
+            for (int g = 0; g < 10000; g++) {
 
-            if(g%30 == 29) {
-                System.out.println("nej pred " + nejlepsiBorec.fitness);
+                // vyselektuju rodice
+                ArrayList<Individual> rodiceAsArray = new ArrayList<>(selectParents(populace));
 
-                //nejlepsiBorec = nejlepsiBorec.localOptimalization();
+                // nejlepsiho jedince zachovam
+                Individual nejlepsiBorec = populace.get(0);
 
-                nejlepsiBorec.localOptimalization2();
-                System.out.println("nej po " + nejlepsiBorec.fitness);
+                if(g%50 == 49) {
+                  //  System.out.println("nej pred " + nejlepsiBorec.fitness);
 
-            }
+                    if(nejlepsiBorec.fitness >= -14){nejlepsiBorec = nejlepsiBorec.localOptimalization(500000);}
+                    else
+                        nejlepsiBorec = nejlepsiBorec.localOptimalization(50000);
 
-            // vytvorim deti - dva nahodni rodice
-            ArrayList<Individual> offspring = new ArrayList<>();
+                   // System.out.println("nej po " + nejlepsiBorec.fitness);
+                }
 
-            // deti nahodnych rodicu vybranych tournament metodou
-            for (int i = 0; i < pocetDeti; i++) {
-                offspring.add(
-                        krizeni(rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size())),
-                                rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size()))));
-            }
+                // vytvorim deti - dva nahodni rodice
+                ArrayList<Individual> offspring = new ArrayList<>();
 
-            for (int i = 1; i < velikostPopulace; i++) {
-                if (Math.random() < pravdepodobnostKrizenisBorcem)
-                    offspring.add(krizeni(nejlepsiBorec, populace.get(i)));
-            }
+                // deti nahodnych rodicu vybranych tournament metodou
+                for (int i = 0; i < pocetDeti; i++) {
+                    offspring.add(
+                            krizeni(rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size())),
+                                    rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size()))));
+                }
 
-            // zmutuju vsechny deti
-            for (Individual dite : offspring) {
+                for (int i = 1; i < velikostPopulace; i++) {
+                    if (Math.random() < pravdepodobnostKrizenisBorcem)
+                        offspring.add(krizeni(nejlepsiBorec, populace.get(i)));
+                }
 
-                dite.spoctiANastavFitness();
+                // zmutuju vsechny deti
+                for (Individual dite : offspring) {
+
+                    dite.spoctiANastavFitness();
 
 //                    if (dite.fitness == 0) {
 //                        System.out.println("** MAM RESENI v generaci " + g);
 //                        dite.printPole();
 //                        return;
 //                    }
-                if (Math.random() < pravdepodobnostMutaceDitete) continue; // nemutuju vsechny.
+                    if (Math.random() < pravdepodobnostMutaceDitete) continue; // nemutuju vsechny.
 
-                dite.zmutujRadek();
-                dite.spoctiANastavFitness();
-            }
-
-            // nahodne zmutuju cast stare populace  - nekrizim
-            for (Individual i : populace) {
-                if (i != nejlepsiBorec && Math.random() < pravdpodobnostMutace) {
-                    i.zmutujRadek();
-                    i.spoctiANastavFitness();
-                    offspring.add(i);
+                    dite.zmutujRadek();
+                    dite.spoctiANastavFitness();
                 }
+
+                // nahodne zmutuju cast stare populace  - nekrizim
+                for (Individual i : populace) {
+                    if (i != nejlepsiBorec && Math.random() < pravdpodobnostMutaceRodice) {
+                        i.zmutujRadek();
+                        i.spoctiANastavFitness();
+                        offspring.add(i);
+                    }
+                }
+
+                offspring.add(nejlepsiBorec);
+                populace = (offspring);
+
+                Collections.sort(populace);
+
+                if (offspring.get(0).fitness == 0) {
+                   // statistiky(populace);
+                    // System.out.println("MAM RESENI v generaci " + g);
+                   // offspring.get(0).printPole();
+                    break;
+                }
+
+                for (int i = populace.size() - 1; i >= velikostPopulace; i--) {
+                    populace.remove(i);
+                }
+
+                if (g % 50 == 0) {
+                   // statistiky(populace);
+                  //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
+                }
+
+                if(fitnessCounted >= 2000000){
+                    break;
+                }
+
             }
 
-            offspring.add(nejlepsiBorec);
-            populace = (offspring);
-
-            Collections.sort(populace);
-
-            if (offspring.get(0).fitness == 0) {
-                System.out.println("MAM RESENI v generaci " + g);
-                offspring.get(0).printPole();
-                break;
-            }
-
-            for (int i = populace.size() - 1; i >= velikostPopulace; i--) {
-                populace.remove(i);
-            }
-
-            if (g % 50 == 0) {
-                statistiky(populace, g);
-                System.out.println();
-            }
-
-
+          //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
+          //  System.out.println("fitness spocteno " + fitnessCounted);
         }
 
-        System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
-        System.out.println("fitness spocteno " + fitnessCounted);
 
-//        while (true) {
-//
-//            initializeVariables();
-//
-//            System.out.println("soucasny fitness:" + mujInd.soucasnyFitness);
-//            mujInd.fitnessKandidata = mujInd.soucasnyFitness;
-//
-//            // opakovani optimalizace
-//            for (int p = 0; p < 300000 * nasobekIteraci; p++) {
-//
-//                mujInd.vyberRadekAPrehazejHo();
-//
-//                //  System.out.println(mujInd.fitnessKandidata);
-//
-//
-//                if (mujInd.lepsiFitness()) {
-//                    if (mujInd.fitnessKandidata > mujInd.soucasnyFitness)
-//                        iteraciBezZlepseni = 0;
-//
-//                    if (mujInd.fitnessKandidata > mujInd.nejlepsiFitnessEver) {
-//                        mujInd.nejlepsiFitnessEver = mujInd.fitnessKandidata;
-//                    }
-//
-//                    if (nejlepsiMezery != null) {
-//                        mujInd.velikostiMezer.set(mujInd.ZmenenyRadek, CopyArray(nejlepsiMezery));
-//                        mujInd.VyplnRadekTajenky(mujInd.ZmenenyRadek, mujInd.velikostiMezer.get(mujInd.ZmenenyRadek));
-//                        mujInd.soucasnyFitness = mujInd.fitnessKandidata;
-//                    }
-//
-//                    if (mujInd.fitnessKandidata == 0) {
-//                        System.out.println("MAM SPRAVNY NONOGRAM!!!");
-//                        break;
-//                    }
-//
-//                } else {
-//                    if (iteraciBezZlepseni < 200)
-//                        iteraciBezZlepseni++;
-//                }
-//
-//                if (iteraci % 1000 == 0) {
-//                    System.out.println(iteraci + ". KOLO. Restartu: " + restartu + " Fitness: "
-//                            + mujInd.soucasnyFitness + " Iteraci bez zlepseni " + iteraciBezZlepseni);
-//                }
-//
-//                if ((p > 50000 * nasobekIteraci && mujInd.soucasnyFitness < -40) ||
-//                        (p > 75000 * nasobekIteraci && mujInd.soucasnyFitness < -30) ||
-//                        (p > 150000 * nasobekIteraci && mujInd.soucasnyFitness < -20)) {
-//                    System.out.println();
-//                    System.out.println();
-//                    break;
-//                }
-//
-//                iteraci++;
-//            }
-//
-//            if (mujInd.fitnessKandidata == 0) {
-//                mujInd.printPole();
-//                return;
-//            }
-//
-//            restartu++;
-//
-//        }
+
+
     }
 
 
