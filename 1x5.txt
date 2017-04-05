@@ -1,0 +1,20 @@
+radky
+1 2 2 1 2
+sloupce - prvni cislo v radku znaci nejspodnejsi blok, posledni cislo v radku znaci vrchni blok
+0
+1
+0
+1
+1
+0
+0
+1
+1
+0
+0
+0
+1
+0
+1
+1
+

@@ -1,0 +1,25 @@
+radky
+3
+10
+1 9
+12
+2 9
+1 8
+1 2 2
+1 2 2
+1 2 2
+2 2
+sloupce - prvni cislo v radku znaci nejspodnejsi blok, posledni cislo v radku znaci vrchni blok
+1
+7
+2 2
+4
+5
+9
+9
+5
+5
+5
+5
+8
+7
