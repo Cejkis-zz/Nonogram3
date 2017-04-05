@@ -12,19 +12,19 @@ public class Main {
     static int vyska, sirka;
 
     static int fitnessCounted = 0;
-    static String jmenoVstupu = "25x20.txt";
+    static String jmenoVstupu = "40x30.txt";
 
     static int velikostPopulace = 200;
-    static int velikostSelekce = 60;
+    static int velikostSelekce = 100;
     static int pocetDeti = 200;
 
-//    static double pravdepodobnostKrizenisBorcem = 0.3;
-//    static double pravdpodobnostMutaceRodice = 0.2;
-//    static double pravdepodobnostMutaceDitete = 0.1;
+    static double pravdepodobnostKrizeni = 0.3;
+    static double pravdpodobnostMutaceRodice = 0.2;
+    static double pravdepodobnostMutaceDitete = 0.1;
 
-    static double pravdepodobnostKrizenisBorcem = 0.5;
-    static double pravdpodobnostMutaceRodice = 0.5;
-    static double pravdepodobnostMutaceDitete = 0.8;
+//    static double pravdepodobnostKrizeni = 0.5;
+//    static double pravdpodobnostMutaceRodice = 0.5;
+//    static double pravdepodobnostMutaceDitete = 0.8;
 
    static public ArrayList<Individual> populace;
 
@@ -122,26 +122,27 @@ public class Main {
 
     public static void statistiky(ArrayList<Individual> populace) {
 
-        double prumernyFitness;
+      //  double prumernyFitness;
         int nejvyssiFitness = populace.get(0).fitness;
-        int nejnizsiFitness = populace.get(0).fitness;
+//        int nejnizsiFitness = populace.get(0).fitness;
 
-        int suma = 0;
+       // int suma = 0;
 
-        for (Individual i : populace) {
-            suma += i.fitness;
+//        for (Individual i : populace) {
+//            suma += i.fitness;
+//
+//            if (i.fitness > nejvyssiFitness) {
+//                nejvyssiFitness = i.fitness;
+//            }
+//            if (i.fitness < nejnizsiFitness) {
+//                nejnizsiFitness = i.fitness;
+//            }
+//        }
+//
+//        prumernyFitness = suma / (double)populace.size();
 
-            if (i.fitness > nejvyssiFitness) {
-                nejvyssiFitness = i.fitness;
-            }
-            if (i.fitness < nejnizsiFitness) {
-                nejnizsiFitness = i.fitness;
-            }
-        }
-
-        prumernyFitness = suma / (double)populace.size();
-
-        System.out.println("Ohodnoceni;" + fitnessCounted + ";NEJLEPSI; " + nejvyssiFitness);
+        //System.out.println("Ohodnoceni;" + fitnessCounted + ";NEJLEPSI; " + nejvyssiFitness);
+        System.out.print(nejvyssiFitness + ";");
 
     }
 
@@ -197,8 +198,8 @@ public class Main {
 
         for (int iterace = 0; iterace < 20 ; iterace++) {
             fitnessCounted = 5000; // workaround
-            System.out.println();
-            System.out.println("reseni cislo " + iterace);
+           // System.out.println();
+           // System.out.println("reseni cislo " + iterace);
 
             initializeVariables();
 
@@ -217,15 +218,15 @@ public class Main {
                 // nejlepsiho jedince zachovam
                 Individual nejlepsiBorec = populace.get(0);
 
-                if(g%50 == 49) {
+              //  if(g%50 == 49) {
                   //  System.out.println("nej pred " + nejlepsiBorec.fitness);
-
-                    if(nejlepsiBorec.fitness >= -14){nejlepsiBorec = nejlepsiBorec.localOptimalization(500000);}
-                    else
-                        nejlepsiBorec = nejlepsiBorec.localOptimalization(50000);
+//
+//                    if(nejlepsiBorec.fitness >= -14){nejlepsiBorec = nejlepsiBorec.localOptimalization(500000);}
+//                    else
+//                        nejlepsiBorec = nejlepsiBorec.localOptimalization(50000);
 
                    // System.out.println("nej po " + nejlepsiBorec.fitness);
-                }
+              //  }
 
                 // vytvorim deti - dva nahodni rodice
                 ArrayList<Individual> offspring = new ArrayList<>();
@@ -238,7 +239,7 @@ public class Main {
                 }
 
                 for (int i = 1; i < velikostPopulace; i++) {
-                    if (Math.random() < pravdepodobnostKrizenisBorcem)
+                    if (Math.random() < pravdepodobnostKrizeni)
                         offspring.add(krizeni(nejlepsiBorec, populace.get(i)));
                 }
 
@@ -283,16 +284,17 @@ public class Main {
                     populace.remove(i);
                 }
 
-                if (g % 50 == 0) {
+                //if (g % 50 == 0) {
                    // statistiky(populace);
                   //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
-                }
+                //}
 
-                if(fitnessCounted >= 2000000){
+                if(fitnessCounted >= 3000000){
                     break;
                 }
 
             }
+            System.out.println();
 
           //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
           //  System.out.println("fitness spocteno " + fitnessCounted);
