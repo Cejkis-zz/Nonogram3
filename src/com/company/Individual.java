@@ -126,7 +126,7 @@ public class Individual implements  Comparable<Individual>{
     // spocte sumu needlemanu vsech sloupcu
     public int spoctiFitness() {
 
-        if(Main.fitnessCounted % 100000 == 0)Main.statistiky(Main.populace);
+        if(Main.fitnessCounted % 30000 == 0)Main.statistiky(Main.populace);
 
         Main.fitnessCounted ++;
 
@@ -384,7 +384,6 @@ public class Individual implements  Comparable<Individual>{
                 if(nejlepsiFitnessEver  >= -60 ) tolerance = 4;
                 if(nejlepsiFitnessEver  >= -26 ) tolerance = 2;
                 if(nejlepsiFitnessEver  >= -2 ) tolerance = 0;
-
 
                 if(fitness > nejlepsiFitnessEver){
                     nejlepsiFitnessEver = fitness;
