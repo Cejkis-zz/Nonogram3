@@ -126,10 +126,6 @@ public class Individual implements  Comparable<Individual>{
     // spocte sumu needlemanu vsech sloupcu
     public int spoctiFitness() {
 
-        if(Main.fitnessCounted % 30000 == 0)Main.statistiky(Main.populace);
-
-        Main.fitnessCounted ++;
-
         int suma = 0;
 
         for (int i = 0; i < Main.sirka; i++) {

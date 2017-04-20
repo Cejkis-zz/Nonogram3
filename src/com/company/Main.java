@@ -1,5 +1,7 @@
 package com.company;
 
+import javax.swing.*;
+import java.awt.*;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.*;
@@ -11,30 +13,27 @@ public class Main {
 
     static int vyska, sirka;
 
-    static int fitnessCounted = 0;
     static String jmenoVstupu = "40x30.txt";
 
     static int velikostPopulace = 200;
     static int velikostSelekce = 100;
     static int pocetDeti = 200;
+    static int bestScore = -1000000000;
 
     static double pravdepodobnostKrizeni = 0.3;
     static double pravdpodobnostMutaceRodice = 0.2;
     static double pravdepodobnostMutaceDitete = 0.1;
 
+    final static int INTERVALLS = 50;
+    final static int LSITERS = 50000;
+    final static int ITERS = 3;
+    final static int GENERATIONS = 10000;
+
 //    static double pravdepodobnostKrizeni = 0.5;
 //    static double pravdpodobnostMutaceRodice = 0.5;
 //    static double pravdepodobnostMutaceDitete = 0.8;
 
-   static public ArrayList<Individual> populace;
-
-    public static void initializeVariables() {
-
-        sirka = horniLegenda.size();
-        vyska = levaLegenda.size();
-
-        //  mujInd = new Individual();
-    }
+    static public ArrayList<Individual> populace;
 
     static void readInput() {
 
@@ -189,28 +188,30 @@ public class Main {
         return p;
     }
 
+
     public static void main(String[] args) {
 
-        horniLegenda = new ArrayList<>(sirka);
-        levaLegenda = new ArrayList<>(vyska);
+        horniLegenda = new ArrayList<>();
+        levaLegenda = new ArrayList<>();
 
         readInput();
 
-        for (int iterace = 0; iterace < 20 ; iterace++) {
-            fitnessCounted = 5000; // workaround
+        sirka = horniLegenda.size();
+        vyska = levaLegenda.size();
+
+        Vizual frame = new Vizual(sirka, vyska);
+
+        for (int iterace = 0; iterace < ITERS ; iterace++) {
+
            // System.out.println();
            // System.out.println("reseni cislo " + iterace);
-
-            initializeVariables();
 
             populace = initPopulation();
             Collections.sort(populace);
             long startTime = System.nanoTime();
 
-            fitnessCounted = 0;
-
             //// VIVA LA EVOLUCION
-            for (int g = 0; g < 10000; g++) {
+            for (int g = 0; g < GENERATIONS ; g++) {
 
                 // vyselektuju rodice
                 ArrayList<Individual> rodiceAsArray = new ArrayList<>(selectParents(populace));
@@ -218,20 +219,25 @@ public class Main {
                 // nejlepsiho jedince zachovam
                 Individual nejlepsiBorec = populace.get(0);
 
-              //  if(g%50 == 49) {
-                  //  System.out.println("nej pred " + nejlepsiBorec.fitness);
-//
-//                    if(nejlepsiBorec.fitness >= -14){nejlepsiBorec = nejlepsiBorec.localOptimalization(500000);}
-//                    else
-//                        nejlepsiBorec = nejlepsiBorec.localOptimalization(50000);
+                // provedu local search u nejlepsiho
+                if( g % INTERVALLS == 0 && g != 0) {
+                    System.out.println("nej pred " + nejlepsiBorec.fitness);
 
-                   // System.out.println("nej po " + nejlepsiBorec.fitness);
-              //  }
+                    if(nejlepsiBorec.fitness >= -14)
+                        nejlepsiBorec = nejlepsiBorec.localOptimalization(LSITERS * 5);
+                    else
+                        nejlepsiBorec = nejlepsiBorec.localOptimalization(LSITERS);
+                    System.out.println("nej po " + nejlepsiBorec.fitness);
+                }
 
-                // vytvorim deti - dva nahodni rodice
-                ArrayList<Individual> offspring = new ArrayList<>();
+                if(nejlepsiBorec.fitness > bestScore){
+                    bestScore = nejlepsiBorec.fitness;
+                    frame.printBorec(nejlepsiBorec);
+                }
 
                 // deti nahodnych rodicu vybranych tournament metodou
+                ArrayList<Individual> offspring = new ArrayList<>();
+
                 for (int i = 0; i < pocetDeti; i++) {
                     offspring.add(
                             krizeni(rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size())),
@@ -247,13 +253,13 @@ public class Main {
                 for (Individual dite : offspring) {
 
                     dite.spoctiANastavFitness();
-
 //                    if (dite.fitness == 0) {
 //                        System.out.println("** MAM RESENI v generaci " + g);
 //                        dite.printPole();
 //                        return;
 //                    }
-                    if (Math.random() < pravdepodobnostMutaceDitete) continue; // nemutuju vsechny.
+                    if (Math.random() < pravdepodobnostMutaceDitete)
+                        continue; // nemutuju vsechny.
 
                     dite.zmutujRadek();
                     dite.spoctiANastavFitness();
@@ -274,12 +280,13 @@ public class Main {
                 Collections.sort(populace);
 
                 if (offspring.get(0).fitness == 0) {
-                   // statistiky(populace);
-                    // System.out.println("MAM RESENI v generaci " + g);
-                   // offspring.get(0).printPole();
+                    statistiky(populace);
+                     System.out.println("MAM RESENI v generaci " + g);
+                     offspring.get(0).printPole();
                     break;
                 }
 
+                //odeber ty horsi, at mas opet puvodni pocet
                 for (int i = populace.size() - 1; i >= velikostPopulace; i--) {
                     populace.remove(i);
                 }
@@ -288,10 +295,6 @@ public class Main {
                    // statistiky(populace);
                   //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
                 //}
-
-                if(fitnessCounted >= 3000000){
-                    break;
-                }
 
             }
             System.out.println();
