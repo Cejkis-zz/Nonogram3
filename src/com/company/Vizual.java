@@ -9,9 +9,11 @@ import java.awt.*;
 public class Vizual extends JFrame {
 
     JTextArea[][] okna;
-    int tloustka = 15;
+    JTextArea bestEver;
+    JTextArea bestNow;
+    int tloustka = 8;
 
-    public void printBorec(Individual i){
+    public void printBorec(Individual i, int g, int islandnr){
 
         boolean[][] taj = i.tajenka;
 
@@ -25,10 +27,16 @@ public class Vizual extends JFrame {
             }
         }
 
+        bestNow.setText(g + " " + i.fitness );
 
     }
 
-    public Vizual(int sirka, int vyska){
+    public void printBestEver(Individual i, int g, int islandnr){
+
+        bestEver.setText(g + " " + i.fitness );
+    }
+
+    public Vizual(int sirka, int vyska, int islandnr){
 
         JFrame frame = new JFrame("Vizual");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -54,8 +62,23 @@ public class Vizual extends JFrame {
                 frame.add(a);
             }
         }
-        frame.setSize(new Dimension(tloustka*sirka + 15, tloustka * vyska + 15));
 
+        bestEver = new JTextArea("best fitness");
+        bestEver.setLocation(new Point(0, vyska * tloustka + tloustka ));
+        bestEver.setSize(new Dimension(100,20));
+        frame.add(bestEver);
+
+        bestNow = new JTextArea("best fitness");
+        bestNow.setLocation(new Point(120, vyska * tloustka + tloustka ));
+        bestNow.setSize(new Dimension(100,20));
+        frame.add(bestNow);
+
+        frame.setSize(new Dimension(tloustka*sirka + tloustka, tloustka * vyska + 80));
+
+        if(islandnr < 4)
+            frame.setLocation(islandnr * frame.getWidth(),0);
+        else
+            frame.setLocation((islandnr -4)* frame.getWidth() ,tloustka * vyska + 75);
         frame.setVisible(true);
 
     }

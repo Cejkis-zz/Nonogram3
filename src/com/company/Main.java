@@ -1,9 +1,8 @@
 package com.company;
 
-import javax.swing.*;
-import java.awt.*;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Main {
@@ -12,30 +11,17 @@ public class Main {
     static ArrayList<ArrayList<Integer>> levaLegenda;
 
     static int vyska, sirka;
+    final static int ITERS = 5;
+    final static int ISLANDS = 5;
+    final static int GENERATIONS = 1000000; // na tomto cisle nezalezi
+    final static double CROSSINTERVAL = 0.001;
+    final static double CATASTROPHY = 0.0002;
+    final static boolean VIZ = false;
+    final static boolean CROWDING = true;
+    static int fitnessCounted;
+    final static int fitnessCountCeil = 200 * 50000; // 200 ohodnoceni ~ 1 generace
 
-    static String jmenoVstupu = "40x30.txt";
-
-    static int velikostPopulace = 200;
-    static int velikostSelekce = 100;
-    static int pocetDeti = 200;
-    static int bestScore = -1000000000;
-
-    static double pravdepodobnostKrizeni = 0.3;
-    static double pravdpodobnostMutaceRodice = 0.2;
-    static double pravdepodobnostMutaceDitete = 0.1;
-
-    final static int INTERVALLS = 50;
-    final static int LSITERS = 50000;
-    final static int ITERS = 3;
-    final static int GENERATIONS = 10000;
-
-//    static double pravdepodobnostKrizeni = 0.5;
-//    static double pravdpodobnostMutaceRodice = 0.5;
-//    static double pravdepodobnostMutaceDitete = 0.8;
-
-    static public ArrayList<Individual> populace;
-
-    static void readInput() {
+    static void readInput(String jmenoVstupu) {
 
         Scanner in = null;
         Scanner radeksc;
@@ -78,233 +64,99 @@ public class Main {
 
     }
 
-    static Individual krizeni(Individual a, Individual b) {
-
-        Individual c = new Individual();
-
-        int bodZlomu = (int) (Math.random() * vyska - 2) + 1;
-
-        for (int i = 0; i < bodZlomu; i++) {
-            c.velikostiMezer.add(new ArrayList<>(a.velikostiMezer.get(i)));
-        }
-
-        for (int i = bodZlomu; i < vyska; i++) {
-            c.velikostiMezer.add(new ArrayList<>(b.velikostiMezer.get(i)));
-        }
-
-        c.vyplnCelouTajenkuPodleLegendyAMezer();
-
-        return c;
-    }
-
-    static Individual krizeni2(Individual a, Individual b) {
-
-        Individual c = new Individual();
-        Individual swap;
-
-        int velikostBloku = (int) (Math.random() * (vyska / 2.0) - 1) + 2;
-
-        for (int i = 0; i < vyska; i++) {
-
-            if (i % velikostBloku == 0) {
-                swap = a;
-                a = b;
-                b = swap;
-            }
-            c.velikostiMezer.add(new ArrayList<>(a.velikostiMezer.get(i)));
-        }
-
-        c.vyplnCelouTajenkuPodleLegendyAMezer();
-
-        return c;
-    }
-
-    public static void statistiky(ArrayList<Individual> populace) {
-
-      //  double prumernyFitness;
-        int nejvyssiFitness = populace.get(0).fitness;
-//        int nejnizsiFitness = populace.get(0).fitness;
-
-       // int suma = 0;
-
-//        for (Individual i : populace) {
-//            suma += i.fitness;
-//
-//            if (i.fitness > nejvyssiFitness) {
-//                nejvyssiFitness = i.fitness;
-//            }
-//            if (i.fitness < nejnizsiFitness) {
-//                nejnizsiFitness = i.fitness;
-//            }
-//        }
-//
-//        prumernyFitness = suma / (double)populace.size();
-
-        //System.out.println("Ohodnoceni;" + fitnessCounted + ";NEJLEPSI; " + nejvyssiFitness);
-        System.out.print(nejvyssiFitness + ";");
-
-    }
-
-    public static Set<Individual> selectParents(ArrayList<Individual> populace) {
-
-        Set<Individual> rodice = new HashSet<>();
-
-        // tournamentovou metodou vyberu nove rodice
-        while (rodice.size() != velikostSelekce) {
-
-            Individual a = populace.get((int) (Math.random() * velikostPopulace));
-            Individual b = populace.get((int) (Math.random() * velikostPopulace));
-
-            if (a.fitness > b.fitness)
-                rodice.add(a);
-            else rodice.add(b);
-        }
-
-        return rodice;
-    }
-
-    public static ArrayList<Individual> initPopulation() {
-
-        ArrayList<Individual> p = new ArrayList<>();
-
-        for (int i = 0; i < velikostPopulace; i++) {
-
-            Individual j = new Individual();
-            j.basicInit();
-
-            for (int k = 0; k < vyska; k++) {
-                j.zmutujRadek();
-            }
-
-            j.spoctiANastavFitness();
-
-            if (j.fitness == 0) {
-                j.fitness = j.spoctiFitness();
-            }
-
-            p.add(j);
-        }
-
-        return p;
-    }
-
-
     public static void main(String[] args) {
 
         horniLegenda = new ArrayList<>();
         levaLegenda = new ArrayList<>();
 
-        readInput();
+        readInput("50x50.txt");
 
         sirka = horniLegenda.size();
         vyska = levaLegenda.size();
 
-        Vizual frame = new Vizual(sirka, vyska);
 
-        for (int iterace = 0; iterace < ITERS ; iterace++) {
+        for (int iterace = 0; iterace < ITERS; iterace++) {
 
-           // System.out.println();
-           // System.out.println("reseni cislo " + iterace);
+            System.out.println(iterace + ". " + new SimpleDateFormat("HH:mm:ss").format(new Date()));
 
-            populace = initPopulation();
-            Collections.sort(populace);
-            long startTime = System.nanoTime();
+            fitnessCounted = 0;
 
-            //// VIVA LA EVOLUCION
-            for (int g = 0; g < GENERATIONS ; g++) {
+            Island[] Islands = new Island[ISLANDS];
+            for (int i = 0; i < ISLANDS; i++) {
+                Islands[i] = new Island(i);
+            }
 
-                // vyselektuju rodice
-                ArrayList<Individual> rodiceAsArray = new ArrayList<>(selectParents(populace));
+            for (int g = 0; g < GENERATIONS; g++) {
 
-                // nejlepsiho jedince zachovam
-                Individual nejlepsiBorec = populace.get(0);
+                if (g % 2000 == 0) System.out.println("generace " + g);
 
-                // provedu local search u nejlepsiho
-                if( g % INTERVALLS == 0 && g != 0) {
-                    System.out.println("nej pred " + nejlepsiBorec.fitness);
-
-                    if(nejlepsiBorec.fitness >= -14)
-                        nejlepsiBorec = nejlepsiBorec.localOptimalization(LSITERS * 5);
-                    else
-                        nejlepsiBorec = nejlepsiBorec.localOptimalization(LSITERS);
-                    System.out.println("nej po " + nejlepsiBorec.fitness);
-                }
-
-                if(nejlepsiBorec.fitness > bestScore){
-                    bestScore = nejlepsiBorec.fitness;
-                    frame.printBorec(nejlepsiBorec);
-                }
-
-                // deti nahodnych rodicu vybranych tournament metodou
-                ArrayList<Individual> offspring = new ArrayList<>();
-
-                for (int i = 0; i < pocetDeti; i++) {
-                    offspring.add(
-                            krizeni(rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size())),
-                                    rodiceAsArray.get((int) (Math.random() * rodiceAsArray.size()))));
-                }
-
-                for (int i = 1; i < velikostPopulace; i++) {
-                    if (Math.random() < pravdepodobnostKrizeni)
-                        offspring.add(krizeni(nejlepsiBorec, populace.get(i)));
-                }
-
-                // zmutuju vsechny deti
-                for (Individual dite : offspring) {
-
-                    dite.spoctiANastavFitness();
-//                    if (dite.fitness == 0) {
-//                        System.out.println("** MAM RESENI v generaci " + g);
-//                        dite.printPole();
-//                        return;
-//                    }
-                    if (Math.random() < pravdepodobnostMutaceDitete)
-                        continue; // nemutuju vsechny.
-
-                    dite.zmutujRadek();
-                    dite.spoctiANastavFitness();
-                }
-
-                // nahodne zmutuju cast stare populace  - nekrizim
-                for (Individual i : populace) {
-                    if (i != nejlepsiBorec && Math.random() < pravdpodobnostMutaceRodice) {
-                        i.zmutujRadek();
-                        i.spoctiANastavFitness();
-                        offspring.add(i);
-                    }
-                }
-
-                offspring.add(nejlepsiBorec);
-                populace = (offspring);
-
-                Collections.sort(populace);
-
-                if (offspring.get(0).fitness == 0) {
-                    statistiky(populace);
-                     System.out.println("MAM RESENI v generaci " + g);
-                     offspring.get(0).printPole();
+                if (fitnessCountCeil < fitnessCounted) {
                     break;
                 }
 
-                //odeber ty horsi, at mas opet puvodni pocet
-                for (int i = populace.size() - 1; i >= velikostPopulace; i--) {
-                    populace.remove(i);
+                for (int i = 0; i < ISLANDS; i++) {
+
+                    if (fitnessCountCeil < fitnessCounted) {
+                        break;
+                    }
+
+                    if (CROWDING) {
+                        Islands[i].optimiseCrowd(g);
+                    } else {
+                        Islands[i].optimise(g);
+                    }
+
+                    // prenos na ostatni ostrovy
+                    if (Math.random() < CROSSINTERVAL && 1 < ISLANDS ) {
+                        System.out.println("Prenos z " + i);
+                        for (int j = 0; j < ISLANDS; j++) {
+                            if (i == j) continue;
+                            Islands[j].populace.add(new Individual(Islands[i].nejlepsiBorec));
+                            Collections.sort(Islands[j].populace);
+                        }
+                    }
+
+                    // katastrofa - smazu nahodnou pulku populace a nejlepsiho
+                    if (Math.random() < CATASTROPHY) {
+
+                        System.out.println("Katastrofa " + i);
+
+                        if (!CROWDING) {
+
+                            Islands[i].populace.remove(0);
+
+                            for (int j = 0; j < Island.velikostPopulace / 2; j++) {
+                                int rem = (int) (Math.random() * Islands[i].populace.size());
+                                Islands[i].populace.remove(rem);
+                            }
+                        }
+
+                        for (int j = 0; j < Islands[i].populace.size(); j++) {
+                            for (int k = 0; k < 5; k++) {
+                                Islands[i].populace.get(j).zmutuj();
+                            }
+                            Islands[i].populace.get(j).spoctiANastavFitness();
+                        }
+
+                    }
+
                 }
 
-                //if (g % 50 == 0) {
-                   // statistiky(populace);
-                  //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
-                //}
-
             }
-            System.out.println();
+            double sum = 0;
+            double sum2 = 0;
 
-          //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
-          //  System.out.println("fitness spocteno " + fitnessCounted);
+            for (int i = 0; i < ISLANDS; i++) {
+                sum += Islands[i].bestScore;
+                sum2 += Islands[i].nejlepsiBorec.fitness;
+                System.out.println(Islands[i].bestScore);
+            }
+
+            System.out.println("Best Avg: " + sum / ISLANDS);
+            System.out.println("Current Avg: " + sum2 / ISLANDS);
+
         }
-
-
-
+        System.out.println(fitnessCounted);
 
     }
 

@@ -15,12 +15,13 @@ public class Individual implements  Comparable<Individual>{
 
     boolean[][] tajenka;
     int fitness;
+    int birth;
 
-    public Individual() {
+    public Individual(int g) {
 
         tajenka = new boolean[Main.vyska][Main.sirka];
         velikostiMezer = new ArrayList<>();
-
+        birth = g;
     }
 
     public  Individual(Individual s){
@@ -40,7 +41,7 @@ public class Individual implements  Comparable<Individual>{
         }
         vyplnCelouTajenkuPodleLegendyAMezer();
         fitness = s.fitness;
-
+        birth = s.birth;
     }
 
     public void basicInit(){
@@ -125,6 +126,8 @@ public class Individual implements  Comparable<Individual>{
 
     // spocte sumu needlemanu vsech sloupcu
     public int spoctiFitness() {
+
+        Main.fitnessCounted ++;
 
         int suma = 0;
 
@@ -285,7 +288,7 @@ public class Individual implements  Comparable<Individual>{
 //
 //    }
 
-    public void zmutujRadek() {
+    public void zmutuj() {
 
         int zmenenyRadek = (int) (Math.random() * Main.vyska);
         ArrayList<Integer> mezeryKtereMenim = velikostiMezer.get(zmenenyRadek);
