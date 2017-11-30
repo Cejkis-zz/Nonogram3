@@ -103,19 +103,19 @@ public class Island {
             Individual p1 = populace.get(n1);
             Individual p2 = populace.get(n2);
 
-            Individual c1 = krizeni(p1, p2, g);
-            Individual c2 = krizeni(p1, p2, g);
+            Individual c1 = krizeni(p1, p2, g);  // TODO parallel
+            Individual c2 = krizeni(p1, p2, g);  // TODO parallel
 
             // mutate c1?
             if (Math.random() < pravdepodobnostMutaceDitete) {
-                c1.zmutuj();
+                c1.zmutuj();  // TODO parallel
             }
             if (Math.random() < pravdepodobnostMutaceDitete) {
-                c2.zmutuj();
+                c2.zmutuj();  // TODO parallel
             }
 
-            c1.spoctiANastavFitness();
-            c2.spoctiANastavFitness();
+            c1.spoctiFitness(); // TODO parallel
+            c2.spoctiFitness();  // TODO parallel
 
             if (rozdilnost(p1, c1) + rozdilnost(p2, c2) < rozdilnost(p1, c1) + rozdilnost(p2, c2)) {
                 if(c1.fitness >= p1.fitness){
@@ -145,11 +145,9 @@ public class Island {
             statistiky(populace);
             System.out.println("MAM RESENI v generaci " + g);
             populace.get(0).printPole();
-            return;
         }
 
     }
-
 
     public void optimise(int g) {
 
@@ -187,18 +185,17 @@ public class Island {
         ArrayList<Individual> offspring = new ArrayList<>();
 
         for (int i = 0; i < pocetDeti; i++) {
-
             offspring.add(
                     krizeni(rodiceAsArray.get((int) (Math.random() * velikostSelekce)),
                             rodiceAsArray.get((int) (Math.random() * velikostSelekce)), g
-                    )
+                    )  // TODO parallel
             );
         }
 
         // jeste zkrizim nejlepsiho s nekterymi jedinci
         for (int i = 1; i < velikostPopulace; i++) {
             if (Math.random() < pravdepodobnostKrizeniSNejlepsim)
-                offspring.add(krizeni(nejlepsiBorec, populace.get(i), g));
+                offspring.add(krizeni(nejlepsiBorec, populace.get(i), g));  // TODO parallel
         }
 
         // zmutuju deti
@@ -209,11 +206,12 @@ public class Island {
 //                        dite.printPole();
 //                        return;
 //                    }
+
             if (Math.random() < pravdepodobnostMutaceDitete) {
-                dite.zmutuj();
+                dite.zmutuj();  // TODO parallel
             }
 
-            dite.spoctiANastavFitness();
+            dite.spoctiFitness(); // TODO parallel
         }
 
         // nahodne zmutuju cast stare populace  - bez krizeni
@@ -222,13 +220,11 @@ public class Island {
             if (i == nejlepsiBorec) continue;
 
             if (Math.random() < pravdpodobnostMutacePopulace) {
-                i.zmutuj();
-                i.spoctiANastavFitness();
+                i.zmutuj();  // TODO parallel
+                i.spoctiFitness();  // TODO parallel
             }
             offspring.add(i);
-
         }
-
 
         // offspring.add(nejlepsiBorec);
 
@@ -239,7 +235,6 @@ public class Island {
         //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
         //}
 
-
         //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
         //  System.out.println("fitness spocteno " + fitnessCounted);
 
@@ -247,8 +242,8 @@ public class Island {
 
         if (populace.get(0).fitness == 0) {
             statistiky(populace);
-            System.out.println("MAM RESENI v generaci " + g);
-            populace.get(0).printPole();
+            //System.out.println("MAM RESENI v generaci " + g);
+            //populace.get(0).printPole();
             return;
         }
 
@@ -351,11 +346,7 @@ public class Island {
                 j.zmutuj();
             }
 
-            j.spoctiANastavFitness();
-
-            if (j.fitness == 0) {
-                j.fitness = j.spoctiFitness();
-            }
+            j.spoctiFitness(); // TODO parallel
 
             p.add(j);
         }

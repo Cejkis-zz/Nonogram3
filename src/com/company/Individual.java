@@ -27,6 +27,7 @@ public class Individual implements  Comparable<Individual>{
     public  Individual(Individual s){
 
         tajenka = new boolean[Main.vyska][Main.sirka];
+
         velikostiMezer = new ArrayList<>();
 
         for (int i = 0; i < Main.vyska; i++) {
@@ -125,78 +126,83 @@ public class Individual implements  Comparable<Individual>{
     }
 
     // spocte sumu needlemanu vsech sloupcu
-    public int spoctiFitness() {
+    public void spoctiFitness() {
 
         Main.fitnessCounted ++;
 
         int suma = 0;
 
-        for (int i = 0; i < Main.sirka; i++) {
-            suma += needlemanWunch(Main.horniLegenda.get(i), arraylistFromPole(i));
 
-            // uz nepotrebuju - zvyseni
-            //suma += needlemanWunch(horniLegenda.get(i), arraylistFromPole(i)) * (Math.abs(Math.pow(i - sirka / 2, 2))+1)  ;
+
+        for (int sloupec = 0; sloupec < Main.sirka; sloupec++) {
+            suma += needlemanWunch(Main.horniLegenda[sloupec], arraylistFromPole(sloupec), Main.sizesOfHorniLegenda[sloupec]);
         }
-        return suma;
-    }
+        fitness = suma;
 
-    // podle tajenky a legendy spocte needlemana pro jeden radek/sloupec
-    public static int needlemanWunch(ArrayList<Integer> legenda, ArrayList<Integer> tajenka) {
-
-        ArrayList<Integer> x = new ArrayList<>(legenda);
-        ArrayList<Integer> y = new ArrayList<>(tajenka);
-
-        x.add(0, 0);
-        y.add(0, 0);
-
-        int[][] H = new int[y.size()][x.size()];
-
-        H[0][0] = 0;
-
-        for (int i = 1; i < y.size(); i++) {
-            H[i][0] = H[i - 1][0] - y.get(i);
-        }
-
-        for (int i = 1; i < x.size(); i++) {
-            H[0][i] = H[0][i - 1] - x.get(i);
-        }
-
-        for (int j = 1; j < x.size(); j++) {
-            for (int i = 1; i < y.size(); i++) {
-
-                H[i][j] = Math.max(H[i - 1][j] - y.get(i),
-                        Math.max(H[i][j - 1] - x.get(j),
-                                H[i - 1][j - 1] - Math.abs(x.get(j) - y.get(i))));
-
-            }
-        }
-
-        return H[y.size() - 1][x.size() - 1];
     }
 
     // vraci sloupec tajenky ve jako ve "sloucenem" tvaru
-    public ArrayList<Integer> arraylistFromPole(int sloupec) {
+    public int [] arraylistFromPole(int sloupec) {
 
-        ArrayList<Integer> a = new ArrayList<>();
+        int [] tajenkaRadek = new int [Main.vyska];
+        int plnost = 0;
         int kombo = 0;
 
-        for (int i = 0; i < Main.vyska; i++) {
-            if (tajenka[i][sloupec]) {
+        for (int j = 0; j < Main.vyska; j++) {
+            if (this.tajenka[j][sloupec]) {
                 kombo++;
             } else {
                 if (kombo != 0) {
-                    a.add(kombo);
+                    tajenkaRadek[plnost++] = kombo;
                 }
                 kombo = 0;
             }
         }
 
         if (kombo != 0) {
-            a.add(kombo);
+            tajenkaRadek[plnost++] = kombo; // posledni ctverecek je cerny
         }
 
-        return a;
+        int [] tajenkaRadekSNulou = new int[plnost + 1];
+        tajenkaRadekSNulou[0] = 0;
+
+        for (int j = 1; j < tajenkaRadekSNulou.length; j++) {
+            tajenkaRadekSNulou[j] = tajenkaRadek[j-1];
+        }
+
+        return tajenkaRadekSNulou;
+
     }
+
+    // podle tajenky a legendy spocte needlemana pro jeden radek/sloupec
+    public static int needlemanWunch(int [] legenda, final int [] tajenkaRadekSNulou, int actuallegends) {
+
+        int[][] H = new int[tajenkaRadekSNulou.length][actuallegends];
+
+        H[0][0] = 0;
+
+        for (int i = 1; i < tajenkaRadekSNulou.length; i++) {
+            H[i][0] = H[i - 1][0] - tajenkaRadekSNulou[i];
+        }
+
+        for (int i = 1; i < actuallegends ; i++) {
+            H[0][i] = H[0][i - 1] - legenda[i];
+        }
+
+        for (int j = 1; j < actuallegends; j++) {
+            for (int i = 1; i < tajenkaRadekSNulou.length; i++) {
+
+                H[i][j] = Math.max(H[i - 1][j] - tajenkaRadekSNulou[i],
+                        Math.max(H[i][j - 1] - legenda[j],
+                                H[i - 1][j - 1] - Math.abs(legenda[j] - tajenkaRadekSNulou[i])));
+
+            }
+        }
+
+        return H[tajenkaRadekSNulou.length - 1][actuallegends - 1];
+    }
+
+
 
     ArrayList<Integer> najdiCoMuzuUbrat(int radek) {
 
@@ -301,10 +307,6 @@ public class Individual implements  Comparable<Individual>{
         VyplnRadekTajenky(zmenenyRadek, mezeryKtereMenim);
     }
 
-    public void spoctiANastavFitness(){
-        fitness = spoctiFitness();
-    }
-
     // Vyplni mezery, mezery 1 a vycentrovana doprostred
     public void vyplnCelouTajenkuPodleLegendyAMezer() {
 
@@ -346,98 +348,97 @@ public class Individual implements  Comparable<Individual>{
         return individual.fitness - fitness;
     }
 
-    //////////
-
     int nejlepsiFitnessEver;
-   // int fitnessKandidata;
 
     ArrayList<Integer> nejlepsiMezery;
+
     Integer ZmenenyRadek;
 
     ArrayList<Integer> zalohaMezer;
 
-    static int iteraciBezZlepseni;
+    int a = 5;
 
-    public Individual localOptimalization(int numberOfOptimalization){
-
-        nejlepsiFitnessEver = fitness;
-       // fitnessKandidata = fitness;
-        int tolerance = 6;
-        if(nejlepsiFitnessEver  >= -60 ) tolerance = 4;
-        if(nejlepsiFitnessEver  >= -26 ) tolerance = 2;
-        if(nejlepsiFitnessEver  >= -2 ) tolerance = 0;
-
-        Individual nejlepsi = new Individual(this);
-
-        // opakovani optimalizace
-        for (int p = 0; p < numberOfOptimalization; p++) {
-
-            prehazimMezery();
-
-            if ( fitness >= nejlepsiFitnessEver - tolerance) {
-
-                if(fitness >= nejlepsi.fitness  ){
-                    nejlepsi = new Individual(this);
-                }
-
-                if(nejlepsiFitnessEver  >= -60 ) tolerance = 4;
-                if(nejlepsiFitnessEver  >= -26 ) tolerance = 2;
-                if(nejlepsiFitnessEver  >= -2 ) tolerance = 0;
-
-                if(fitness > nejlepsiFitnessEver){
-                    nejlepsiFitnessEver = fitness;
-                }
-
-//                if (nejlepsiMezery != null) {
-//                    velikostiMezer.set(ZmenenyRadek, new ArrayList<Integer>(nejlepsiMezery));
-//                    VyplnRadekTajenky(ZmenenyRadek, velikostiMezer.get(ZmenenyRadek));
-//                    fitness = fitnessKandidata;
+//    public Individual localOptimalization(int numberOfOptimalization){
+//
+//        nejlepsiFitnessEver = fitness;
+//       // fitnessKandidata = fitness;
+//        int tolerance = 6;
+//        if(nejlepsiFitnessEver  >= -60 ) tolerance = 4;
+//        if(nejlepsiFitnessEver  >= -26 ) tolerance = 2;
+//        if(nejlepsiFitnessEver  >= -2 ) tolerance = 0;
+//
+//        Individual nejlepsi = new Individual(this);
+//
+//        // opakovani optimalizace
+//        for (int p = 0; p < numberOfOptimalization; p++) {
+//
+//            prehazimMezery();
+//
+//            if ( fitness >= nejlepsiFitnessEver - tolerance) {
+//
+//                if(fitness >= nejlepsi.fitness  ){
+//                    nejlepsi = new Individual(this);
 //                }
-
-                if (fitness == 0) {
-                    System.out.println("MAM SPRAVNY NONOGRAM - optimalizace!!!");
-                    return this;
-                }
-
-            }else{
-                // vrat puvodni hodnoty
-                velikostiMezer.set(ZmenenyRadek, zalohaMezer);
-                VyplnRadekTajenky(ZmenenyRadek, zalohaMezer);
-            }
-
-//            if (p % 1000 == 0) {
-//                System.out.println(p + ". KOLO. fitness: "
-//                        + fitness + " Iteraci bez zlepseni " + iteraciBezZlepseni);
+//
+//                if(nejlepsiFitnessEver  >= -60 ) tolerance = 4;
+//                if(nejlepsiFitnessEver  >= -26 ) tolerance = 2;
+//                if(nejlepsiFitnessEver  >= -2 ) tolerance = 0;
+//
+//                if(fitness > nejlepsiFitnessEver){
+//                    nejlepsiFitnessEver = fitness;
+//                }
+//
+////                if (nejlepsiMezery != null) {
+////                    velikostiMezer.set(ZmenenyRadek, new ArrayList<Integer>(nejlepsiMezery));
+////                    VyplnRadekTajenky(ZmenenyRadek, velikostiMezer.get(ZmenenyRadek));
+////                    fitness = fitnessKandidata;
+////                }
+//
+//                if (fitness == 0) {
+//                    System.out.println("MAM SPRAVNY NONOGRAM - optimalizace!!!");
+//                    return this;
+//                }
+//
+//            }else{
+//                // vrat puvodni hodnoty
+//                velikostiMezer.set(ZmenenyRadek, zalohaMezer);
+//                VyplnRadekTajenky(ZmenenyRadek, zalohaMezer);
 //            }
+//
+////            if (p % 1000 == 0) {
+////                System.out.println(p + ". KOLO. fitness: "
+////                        + fitness + " Iteraci bez zlepseni " + iteraciBezZlepseni);
+////            }
+//
+//
+//        }
+//        return nejlepsi;
+//    }
 
-
-        }
-        return nejlepsi;
-    }
-
-
-    public void prehazimMezery() {
-
-        ZmenenyRadek = (int) (Math.random() * Main.vyska);
-
-        ArrayList<Integer> mezeryKtereMenim =velikostiMezer.get(ZmenenyRadek);
-
-        zalohaMezer = new ArrayList<>(velikostiMezer.get(ZmenenyRadek));
-
-        if(mezeryKtereMenim.size() == 1) return;
-
-        int kolikrat = 1;//(int)(Math.random() * (3 + iteraciBezZlepseni/20) ) + 2;
-
-        // kolikrat prehazim mezery v ramci jednoho radku
-        for (int l = 0; l < kolikrat; l++) {
-            prehodJednumezeruVJednomRadku(ZmenenyRadek, mezeryKtereMenim);
-        }
-
-        // vypln tajenku a spocti fitness
-        VyplnRadekTajenky(ZmenenyRadek, mezeryKtereMenim);
-        fitness = spoctiFitness();
-        nejlepsiMezery = mezeryKtereMenim;
-
-    }
+//    public void prehazimMezery() {
+//
+//        ZmenenyRadek = (int) (Math.random() * Main.vyska);
+//
+//        ArrayList<Integer> mezeryKtereMenim = velikostiMezer.get(ZmenenyRadek);
+//
+//        zalohaMezer = new ArrayList<>(velikostiMezer.get(ZmenenyRadek));
+//
+//        if(mezeryKtereMenim.size() == 1) return;
+//
+//        int kolikrat = 1;//(int)(Math.random() * (3 + iteraciBezZlepseni/20) ) + 2;
+//
+//        // kolikrat prehazim mezery v ramci jednoho radku
+//        for (int l = 0; l < kolikrat; l++) {
+//            prehodJednumezeruVJednomRadku(ZmenenyRadek, mezeryKtereMenim);
+//        }
+//
+//        // vypln tajenku a spocti fitness
+//        VyplnRadekTajenky(ZmenenyRadek, mezeryKtereMenim);
+//
+//        fitness = spoctiFitness();
+//
+//        nejlepsiMezery = mezeryKtereMenim;
+//
+//    }
 
 }
