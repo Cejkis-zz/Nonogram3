@@ -3,6 +3,7 @@ package com.company;
 import java.util.*;
 
 import static com.company.Main.sirka;
+import static com.company.Main.velikost;
 
 /**
  * Created by Čejkis on 19.04.2017.
@@ -42,12 +43,12 @@ public class Island {
 
         int diff = 0;
 
-        for (int i = 0; i < Main.vyska; i++) {
-            for (int j = 0; j < sirka; j++) {
-                if (i1.tajenka[i][j] != i2.tajenka[i][j]) {
+        for (int i = 0; i < velikost; i++) {
+
+                if (i1.tajenka[i] != i2.tajenka[i]) {
                     diff++;
                 }
-            }
+
         }
 
         return diff;
@@ -154,7 +155,7 @@ public class Island {
 
         // provedu local search u nejlepsiho
 
-        if (Main.VIZ && g % 10 == 0)
+        if (Main.VIZ && g % 5 == 0)
             frame.printBorec(nejlepsiBorec, g, islandNr);
 
 //        if( g % INTERVALLS == 0 && g != 0) {
@@ -257,15 +258,12 @@ public class Island {
 
         Individual c = new Individual(gen);
 
-        for (int i = 0; i < Main.vyska; i++) {
+        for (int i = 0; i < Main.velikost; i++) {
             if (Math.random() > 0.5)
-                for (int j = 0; j <sirka ; j++) {
-                    c.tajenka[i][j] = a.tajenka[i][j];
-                }
-            else
-                for (int j = 0; j <sirka ; j++) {
-                    c.tajenka[i][j] = b.tajenka[i][j];
-                }
+                    c.tajenka[i] = a.tajenka[i];
+                else
+                    c.tajenka[i] = b.tajenka[i];
+
         }
 
         return c;

@@ -4,7 +4,9 @@ import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.CUdeviceptr;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 import static com.company.Main.*;
 import static jcuda.driver.JCudaDriver.*;
@@ -16,26 +18,23 @@ import static jcuda.driver.JCudaDriver.*;
 
 public class Individual implements  Comparable<Individual>{
 
-    boolean[][] tajenka;
+    int[] tajenka;
     int fitness;
     int birth;
 
     public Individual(int g) {
 
-        tajenka = new boolean[vyska][sirka];
+        tajenka = new int[velikost];
 
         birth = g;
     }
 
     public  Individual(Individual s){
 
-        tajenka = new boolean[vyska][sirka];
+        tajenka = new int[velikost];
 
-        for (int i = 0; i < sirka; i++) {
-            for (int j=0; j< vyska; j++){
-                tajenka[j][i] = s.tajenka[j][i];
-            }
-        }
+        for (int i = 0; i < velikost; i++) {
+                tajenka[i] = s.tajenka[i];}
 
         fitness = s.fitness;
         birth = s.birth;
@@ -72,8 +71,12 @@ public class Individual implements  Comparable<Individual>{
     // spocte sumu needlemanu vsech sloupcu
     public void spoctiFitness() {
 
-        Main.fitnessCounted ++;
 
+        if (Main.fitnessCounted%10000 == 0){
+            System.out.println( new SimpleDateFormat("HH:mm:ss").format(new Date()));
+        }
+
+        Main.fitnessCounted ++;
         spoctiFitnessCPU();
         //spoctiFitnessGPU();
 
@@ -81,24 +84,15 @@ public class Individual implements  Comparable<Individual>{
 
     public void spoctiFitnessGPU(){
 
-        int[] tajenka1D = new int[vyska* sirka];
-
-        for (int i = 0; i < vyska ; i++) {
-            for (int j = 0; j < sirka ; j++) {
-                if (tajenka[i][j] == true) tajenka1D[j* vyska + i] = 1;
-                else tajenka1D[j* vyska + i] = 0;
-            }
-        }
-
         //printPole();
 
         CUdeviceptr fitness_GPU = new CUdeviceptr();
         cuMemAlloc(fitness_GPU, sirka*Sizeof.INT);
 
         CUdeviceptr tajenka_D = new CUdeviceptr();
-        cuMemAlloc(tajenka_D, tajenka1D.length*Sizeof.INT);
-        cuMemcpyHtoD(tajenka_D, Pointer.to(tajenka1D),
-                tajenka1D.length * Sizeof.INT);
+        cuMemAlloc(tajenka_D, tajenka.length*Sizeof.INT);
+        cuMemcpyHtoD(tajenka_D, Pointer.to(tajenka),
+                tajenka.length * Sizeof.INT);
 
         Pointer kernelParameters = Pointer.to(
                 Pointer.to(tajenka_D),
@@ -119,9 +113,8 @@ public class Individual implements  Comparable<Individual>{
                 1 * Sizeof.INT);
 
         fitness = hostOutput[0];
+
         //System.out.println("success" + ++succ);
-
-
 
         cuMemFree(tajenka_D);
         cuMemFree(fitness_GPU);
@@ -202,7 +195,7 @@ public class Individual implements  Comparable<Individual>{
 
         double pomer = Math.max(0.2,Math.random());
 
-        fitness = 2*(int)(pomer*fitnessC + (1-pomer)*fitnessR);
+        fitness = fitnessC + fitnessR ;//2*(int)(pomer*fitnessC + (1-pomer)*fitnessR);
 
 
     }
@@ -214,7 +207,7 @@ public class Individual implements  Comparable<Individual>{
         int kombo = 0;
 
         for (int j = 0; j < Main.vyska; j++) {
-            if (this.tajenka[j][sloupec]) {
+            if (tajenka[sloupec*vyska + j] == 1) {
                 kombo++;
             } else {
                 if (kombo != 0) {
@@ -246,7 +239,7 @@ public class Individual implements  Comparable<Individual>{
         int kombo = 0;
 
         for (int j = 0; j < Main.sirka; j++) {
-            if (this.tajenka[radek][j]) {
+            if (tajenka[radek*sirka + j] == 1) {
                 kombo++;
             } else {
                 if (kombo != 0) {
@@ -306,10 +299,9 @@ public class Individual implements  Comparable<Individual>{
 
         for (int i = 0; i < pocetzmen; i++) {
 
-            int x = (int) (Math.random() * vyska);
-            int y = (int) (Math.random() * sirka);
+            int x = (int) (Math.random() * velikost);
 
-            tajenka[x][y] = !tajenka[x][y];
+            tajenka[x] = 1-tajenka[x];
         }
 
         //int kolikrat = (int) (Math.random() * (3 + iteraciBezZlepseni / 20)) + 2;

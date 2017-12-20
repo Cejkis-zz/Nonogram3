@@ -3,6 +3,9 @@ package com.company;
 import javax.swing.*;
 import java.awt.*;
 
+import static com.company.Main.sirka;
+import static com.company.Main.vyska;
+
 /**
  * Created by Čejkis on 20.04.2017.
  */
@@ -15,12 +18,12 @@ public class Vizual extends JFrame {
 
     public void printBorec(Individual i, int g, int islandnr){
 
-        boolean[][] taj = i.tajenka;
+        int[] taj = i.tajenka;
 
-        for (int j = 0; j < okna.length; j++) {
-            for (int k = 0; k < okna[0].length ; k++) {
+        for (int j = 0; j < sirka; j++) {
+            for (int k = 0; k < vyska ; k++) {
 
-                if (taj[k][j] == false)
+                if (taj[ vyska*j + k ] == 0)
                     okna[j][k].setBackground(Color.WHITE);
                 else
                     okna[j][k].setBackground(Color.BLACK);

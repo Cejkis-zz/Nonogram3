@@ -16,7 +16,7 @@ import jcuda.utils.KernelLauncher;
 
 public class Main {
 
-    static int vyska, sirka;
+    static int vyska, sirka, velikost;
     final static int ITERS = 5;
     final static int ISLANDS = 1;
     final static int GENERATIONS = 10000000; // na tomto cisle nezalezi
@@ -313,6 +313,7 @@ public class Main {
 
         sirka = horniLegenda.length;
         vyska = levaLegenda.length;
+        velikost = sirka*vyska;
 
         setupGPU();
       //  testGPU();
