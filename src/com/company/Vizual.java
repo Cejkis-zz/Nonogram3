@@ -65,12 +65,12 @@ public class Vizual extends JFrame {
 
         bestEver = new JTextArea("best fitness");
         bestEver.setLocation(new Point(0, vyska * tloustka + tloustka ));
-        bestEver.setSize(new Dimension(100,20));
+        bestEver.setSize(new Dimension(70,20));
         frame.add(bestEver);
 
         bestNow = new JTextArea("best fitness");
-        bestNow.setLocation(new Point(120, vyska * tloustka + tloustka ));
-        bestNow.setSize(new Dimension(100,20));
+        bestNow.setLocation(new Point(80, vyska * tloustka + tloustka ));
+        bestNow.setSize(new Dimension(70,20));
         frame.add(bestNow);
 
         frame.setSize(new Dimension(tloustka*sirka + tloustka, tloustka * vyska + 80));

@@ -2,13 +2,15 @@ package com.company;
 
 import java.util.*;
 
+import static com.company.Main.sirka;
+
 /**
  * Created by Čejkis on 19.04.2017.
  */
 public class Island {
 
     static int velikostPopulace = 200;
-    static int velikostSelekce = 75;
+    static int velikostSelekce = 70;
     static int pocetDeti = 200;
 
     public ArrayList<Individual> populace;
@@ -29,12 +31,9 @@ public class Island {
     public Island(int islandNr) {
 
         if (Main.VIZ)
-            frame = new Vizual(Main.sirka, Main.vyska, islandNr);
+            frame = new Vizual(sirka, Main.vyska, islandNr);
 
         this.islandNr = islandNr;
-
-        // System.out.println();
-        // System.out.println("reseni cislo " + iterace);
 
         populace = initPopulation(0);
     }
@@ -44,7 +43,7 @@ public class Island {
         int diff = 0;
 
         for (int i = 0; i < Main.vyska; i++) {
-            for (int j = 0; j < Main.sirka; j++) {
+            for (int j = 0; j < sirka; j++) {
                 if (i1.tajenka[i][j] != i2.tajenka[i][j]) {
                     diff++;
                 }
@@ -144,7 +143,6 @@ public class Island {
         if (populace.get(0).fitness == 0) {
             statistiky(populace);
             System.out.println("MAM RESENI v generaci " + g);
-            populace.get(0).printPole();
         }
 
     }
@@ -192,7 +190,7 @@ public class Island {
             );
         }
 
-        // jeste zkrizim nejlepsiho s nekterymi jedinci
+         //jeste zkrizim nejlepsiho s nekterymi jedinci
         for (int i = 1; i < velikostPopulace; i++) {
             if (Math.random() < pravdepodobnostKrizeniSNejlepsim)
                 offspring.add(krizeni(nejlepsiBorec, populace.get(i), g));  // TODO parallel
@@ -226,9 +224,10 @@ public class Island {
             offspring.add(i);
         }
 
-        // offspring.add(nejlepsiBorec);
+        offspring.add(nejlepsiBorec);
 
         populace = offspring;
+
 
         //if (g % 50 == 0) {
         // statistiky(populace);
@@ -254,37 +253,20 @@ public class Island {
 
     }
 
-    static Individual krizeni2(Individual a, Individual b, int gen) {
-
-        Individual c = new Individual(gen);
-
-        int bodZlomu = (int) (Math.random() * Main.vyska - 2) + 1;
-
-        for (int i = 0; i < bodZlomu; i++) {
-            c.velikostiMezer.add(new ArrayList<>(a.velikostiMezer.get(i)));
-        }
-
-        for (int i = bodZlomu; i < Main.vyska; i++) {
-            c.velikostiMezer.add(new ArrayList<>(b.velikostiMezer.get(i)));
-        }
-
-        c.vyplnCelouTajenkuPodleLegendyAMezer();
-
-        return c;
-    }
-
     static Individual krizeni(Individual a, Individual b, int gen) {
 
         Individual c = new Individual(gen);
 
         for (int i = 0; i < Main.vyska; i++) {
             if (Math.random() > 0.5)
-                c.velikostiMezer.add(new ArrayList<>(a.velikostiMezer.get(i)));
+                for (int j = 0; j <sirka ; j++) {
+                    c.tajenka[i][j] = a.tajenka[i][j];
+                }
             else
-                c.velikostiMezer.add(new ArrayList<>(b.velikostiMezer.get(i)));
+                for (int j = 0; j <sirka ; j++) {
+                    c.tajenka[i][j] = b.tajenka[i][j];
+                }
         }
-
-        c.vyplnCelouTajenkuPodleLegendyAMezer();
 
         return c;
     }
@@ -340,7 +322,6 @@ public class Island {
         for (int i = 0; i < velikostPopulace; i++) {
 
             Individual j = new Individual(g);
-            j.basicInit();
 
             for (int k = 0; k < Main.vyska * 5; k++) {
                 j.zmutuj();

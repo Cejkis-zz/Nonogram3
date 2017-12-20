@@ -1,8 +1,13 @@
 package com.company;
 
+import jcuda.Pointer;
+import jcuda.Sizeof;
+import jcuda.driver.CUdeviceptr;
+
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+
+import static com.company.Main.*;
+import static jcuda.driver.JCudaDriver.*;
 
 /**
  * Created by cejkis on 8.11.15.
@@ -11,59 +16,35 @@ import java.util.Collections;
 
 public class Individual implements  Comparable<Individual>{
 
-    ArrayList<ArrayList<Integer>> velikostiMezer;
-
     boolean[][] tajenka;
     int fitness;
     int birth;
 
     public Individual(int g) {
 
-        tajenka = new boolean[Main.vyska][Main.sirka];
-        velikostiMezer = new ArrayList<>();
+        tajenka = new boolean[vyska][sirka];
+
         birth = g;
     }
 
     public  Individual(Individual s){
 
-        tajenka = new boolean[Main.vyska][Main.sirka];
+        tajenka = new boolean[vyska][sirka];
 
-        velikostiMezer = new ArrayList<>();
-
-        for (int i = 0; i < Main.vyska; i++) {
-            velikostiMezer.add(new ArrayList<Integer>());
-        }
-        for (int i = 0; i < s.velikostiMezer.size(); i++) {
-            ArrayList<Integer> radek = s.velikostiMezer.get(i) ;
-
-            for (Integer ii: radek ){
-                velikostiMezer.get(i).add(ii);
+        for (int i = 0; i < sirka; i++) {
+            for (int j=0; j< vyska; j++){
+                tajenka[j][i] = s.tajenka[j][i];
             }
         }
-        vyplnCelouTajenkuPodleLegendyAMezer();
+
         fitness = s.fitness;
         birth = s.birth;
-    }
 
-    public void basicInit(){
-
-        for (int i = 0; i < Main.vyska; i++) {
-            velikostiMezer.add(new ArrayList<Integer>());
-        }
-        vytvorMezery();
-        vyplnCelouTajenkuPodleLegendyAMezer();
-    }
-
-    public void printPole() {
-
-        for (int i = 0; i < Main.vyska; i++) {
-            printRadek(i, velikostiMezer.get(i));
-        }
     }
 
     public void printRadek(int i, ArrayList<Integer> Mezery) {
 
-        ArrayList<Integer> policka = Main.levaLegenda.get(i);
+        int[] policka = Main.levaLegenda[i];
         //  if(i<10){System.out.print(" " + i );}else{
         //       System.out.print("" + i );
         //   }
@@ -72,10 +53,10 @@ public class Individual implements  Comparable<Individual>{
             System.out.print("  ");
         }
 
-        for (int j = 0; j < policka.size(); j++) {
+        for (int j = 0; j < policka.length; j++) {
 
             // vytisknu jedno policko
-            for (int k = 0; k < policka.get(j); k++) {
+            for (int k = 0; k < policka[j]; k++) {
                 System.out.print("##");
             }
 
@@ -88,61 +69,145 @@ public class Individual implements  Comparable<Individual>{
         System.out.println();
     }
 
-    public void vytvorMezery() {
-
-        ArrayList<Integer> VelikostiPoli;
-        ArrayList<Integer> Mezery;
-        int velikost;
-
-        for (int i = 0; i < Main.vyska; i++) { // i je radek
-
-            VelikostiPoli = Main.levaLegenda.get(i);
-            Mezery = velikostiMezer.get(i);
-
-            if (VelikostiPoli.isEmpty()) { // nebo 1? Nejspis nikdy nenastane
-                Mezery.add(Main.sirka);
-            } else {
-                velikost = 0;
-
-                for (Integer aVelikostiPoli : VelikostiPoli) { //j je poradi cisla v radku
-                    velikost += aVelikostiPoli;
-                }
-
-                velikost += VelikostiPoli.size() - 1;
-                double zbytek = Main.sirka - velikost;
-                Mezery.add((int) Math.ceil(zbytek / 2));
-
-                for (int j = 0; j < VelikostiPoli.size() - 1; j++) {
-                    Mezery.add(1);
-                }
-                Mezery.add((int) Math.floor(zbytek / 2));
-            }
-            if (VelikostiPoli.size() + 1 != Mezery.size()) {
-
-                System.out.println("ALERT policek a mezer" + VelikostiPoli.size() + "," + Mezery.size());
-            }
-        }
-
-    }
-
     // spocte sumu needlemanu vsech sloupcu
     public void spoctiFitness() {
 
         Main.fitnessCounted ++;
 
-        int suma = 0;
-
-
-
-        for (int sloupec = 0; sloupec < Main.sirka; sloupec++) {
-            suma += needlemanWunch(Main.horniLegenda[sloupec], arraylistFromPole(sloupec), Main.sizesOfHorniLegenda[sloupec]);
-        }
-        fitness = suma;
+        spoctiFitnessCPU();
+        //spoctiFitnessGPU();
 
     }
 
-    // vraci sloupec tajenky ve jako ve "sloucenem" tvaru
-    public int [] arraylistFromPole(int sloupec) {
+    public void spoctiFitnessGPU(){
+
+        int[] tajenka1D = new int[vyska* sirka];
+
+        for (int i = 0; i < vyska ; i++) {
+            for (int j = 0; j < sirka ; j++) {
+                if (tajenka[i][j] == true) tajenka1D[j* vyska + i] = 1;
+                else tajenka1D[j* vyska + i] = 0;
+            }
+        }
+
+        //printPole();
+
+        CUdeviceptr fitness_GPU = new CUdeviceptr();
+        cuMemAlloc(fitness_GPU, sirka*Sizeof.INT);
+
+        CUdeviceptr tajenka_D = new CUdeviceptr();
+        cuMemAlloc(tajenka_D, tajenka1D.length*Sizeof.INT);
+        cuMemcpyHtoD(tajenka_D, Pointer.to(tajenka1D),
+                tajenka1D.length * Sizeof.INT);
+
+        Pointer kernelParameters = Pointer.to(
+                Pointer.to(tajenka_D),
+                Pointer.to(fitness_GPU)
+        );
+
+        cuLaunchKernel(fitnessColumnFunction,
+                sirka, 1, 1,      // Grid dimension
+                1, 1, 1,      // Block dimension
+                0, null,               // Shared memory size and stream
+                kernelParameters, null // Kernel- and extra parameters
+        );
+
+        cuCtxSynchronize();
+
+        int hostOutput[] = new int[1];
+        cuMemcpyDtoH(Pointer.to(hostOutput), fitness_GPU,
+                1 * Sizeof.INT);
+
+        fitness = hostOutput[0];
+        //System.out.println("success" + ++succ);
+
+
+
+        cuMemFree(tajenka_D);
+        cuMemFree(fitness_GPU);
+
+    }
+
+    public int needlemanWunchP(int sloupec, final int [] legenda1D, int [] velikostiLegend, int [] posunyLegend, final boolean [] tajenka1D, int vyska ) {
+
+        int velikostTajenky = 1;
+
+        int [] tajenkaSloupec = new int [vyska];
+
+        tajenkaSloupec[0] = 0;
+        int kombo = 0;
+
+        for (int i = 0; i < vyska; i++) {
+            if (tajenka1D[sloupec*vyska + i]) {
+                kombo++;
+            } else {
+                if (kombo != 0) {
+                    tajenkaSloupec[velikostTajenky++] = kombo;
+                }
+                kombo = 0;
+            }
+        }
+
+        if (kombo != 0) {
+            tajenkaSloupec[velikostTajenky++] = kombo; // posledni ctverecek je cerny
+        }
+        
+        //////////////////////////////////////////////////
+        
+        int velikostLegendy = velikostiLegend[sloupec];
+        int zacatekLegendy = posunyLegend[sloupec];
+        int[][] H = new int[velikostTajenky][velikostLegendy];
+
+        H[0][0] = 0;
+
+        for (int i = 1; i < velikostTajenky; i++) {
+            H[i][0] = H[i - 1][0] - tajenkaSloupec[i];
+        }
+
+        for (int i = 1; i < velikostLegendy ; i++) {
+            H[0][i] = H[0][i - 1] - legenda1D[ zacatekLegendy+i];
+        }
+
+        //---------------
+
+        for (int j = 1; j < velikostLegendy; j++) {
+            int legendaJ = legenda1D[ zacatekLegendy+ j];
+
+            for (int i = 1; i < velikostTajenky; i++) {
+
+                H[i][j] = Math.max(H[i - 1][j    ] - tajenkaSloupec[i],
+                          Math.max(H[i    ][j - 1] - legendaJ,
+                                   H[i - 1][j - 1] - Math.abs(legendaJ - tajenkaSloupec[i])));
+            }
+        }
+
+        return H[velikostTajenky-1 ][velikostLegendy-1 ];
+    }
+
+    public void spoctiFitnessCPU() {
+
+        Main.fitnessCounted ++;
+
+        int fitnessR=0;
+        int fitnessC=0;
+
+
+        for (int i = 0; i < sirka; i++) {
+            fitnessC += needlemanWunch(horniLegenda[i], computeColumn(i), sizesOfHorniLegenda[i] );
+        }
+
+        for (int i = 0; i < vyska; i++) {
+            fitnessR += needlemanWunch(levaLegenda[i], computeRow(i), sizesOfLevaLegenda[i] );
+        }
+
+        double pomer = Math.max(0.2,Math.random());
+
+        fitness = 2*(int)(pomer*fitnessC + (1-pomer)*fitnessR);
+
+
+    }
+
+    public int [] computeColumn(int sloupec) {
 
         int [] tajenkaRadek = new int [Main.vyska];
         int plnost = 0;
@@ -150,6 +215,38 @@ public class Individual implements  Comparable<Individual>{
 
         for (int j = 0; j < Main.vyska; j++) {
             if (this.tajenka[j][sloupec]) {
+                kombo++;
+            } else {
+                if (kombo != 0) {
+                    tajenkaRadek[plnost++] = kombo;
+                }
+                kombo = 0;
+            }
+        }
+
+        if (kombo != 0) {
+            tajenkaRadek[plnost++] = kombo; // posledni ctverecek je cerny
+        }
+
+        int [] tajenkaRadekSNulou = new int[plnost + 1];
+        tajenkaRadekSNulou[0] = 0;
+
+        for (int j = 1; j < tajenkaRadekSNulou.length; j++) {
+            tajenkaRadekSNulou[j] = tajenkaRadek[j-1];
+        }
+
+        return tajenkaRadekSNulou;
+
+    }
+
+    public int [] computeRow(int radek) {
+
+        int [] tajenkaRadek = new int [Main.sirka];
+        int plnost = 0;
+        int kombo = 0;
+
+        for (int j = 0; j < Main.sirka; j++) {
+            if (this.tajenka[radek][j]) {
                 kombo++;
             } else {
                 if (kombo != 0) {
@@ -203,143 +300,21 @@ public class Individual implements  Comparable<Individual>{
     }
 
 
-
-    ArrayList<Integer> najdiCoMuzuUbrat(int radek) {
-
-        ArrayList<Integer> IndexyMezerKtereMuzuUbrat = new ArrayList<>();
-
-        ArrayList<Integer> mezeryVAktualnimRadku = velikostiMezer.get(radek);
-
-        // prvni mezera
-        if (mezeryVAktualnimRadku.get(0) > 0) {
-            IndexyMezerKtereMuzuUbrat.add(0);
-        }
-
-        // posledni mezera
-        if (mezeryVAktualnimRadku.size() > 1 && mezeryVAktualnimRadku.get(mezeryVAktualnimRadku.size() - 1) > 0) {
-            IndexyMezerKtereMuzuUbrat.add(mezeryVAktualnimRadku.size() - 1);
-        }
-
-        // uvnitr radku najdu mista na vkladani a vybirani
-        for (int j = 1; j < mezeryVAktualnimRadku.size() - 1; j++) {
-
-            if (mezeryVAktualnimRadku.get(j) > 1) {
-                IndexyMezerKtereMuzuUbrat.add(j);
-            }
-        }
-
-        return IndexyMezerKtereMuzuUbrat;
-    }
-
-    public void prehodJednumezeruVJednomRadku(int radek, ArrayList<Integer> mezeryKtereMenim) {
-
-        int i, j, kolikuberu, indexZeKterehoUbiram;
-
-        ArrayList<Integer> IndexyMezerKtereMuzuUbrat = najdiCoMuzuUbrat(radek);
-
-        if (IndexyMezerKtereMuzuUbrat.isEmpty()) return;
-
-        do {
-            i = (int) (Math.random() * IndexyMezerKtereMuzuUbrat.size());
-            j = (int) (Math.random() * mezeryKtereMenim.size());
-        } while (IndexyMezerKtereMuzuUbrat.get(i) == j);
-        //   System.out.println(i + " * " +j );
-
-        // zmen mezery
-        indexZeKterehoUbiram = IndexyMezerKtereMuzuUbrat.get(i);
-
-        // kdyz ubiram z prvni nebo posledni mezery, muzu ubrat vsechny policka
-        if (indexZeKterehoUbiram == 0 || indexZeKterehoUbiram == mezeryKtereMenim.size() - 1) {
-            kolikuberu = (int) (Math.random() * (mezeryKtereMenim.get(indexZeKterehoUbiram))) + 1;
-        } else kolikuberu = (int) (Math.random() * (mezeryKtereMenim.get(indexZeKterehoUbiram) - 1)) + 1;
-
-        mezeryKtereMenim.set(indexZeKterehoUbiram, mezeryKtereMenim.get(indexZeKterehoUbiram) - kolikuberu);
-        mezeryKtereMenim.set(j, mezeryKtereMenim.get(j) + kolikuberu);
-
-
-    }
-
-    // vyber nahodny radek, nahodnekrat v nem prehazej mezery
-//    public void vyberRadekAPrehazejHo() {
-//
-//        ZmenenyRadek = (int) (Math.random() * Main.vyska);
-//        ArrayList<Integer> mezeryKtereMenim;
-//
-//        ArrayList<Integer> zalohaMezer =  Main.CopyArray(velikostiMezer.get(ZmenenyRadek));
-//
-//        mezeryKtereMenim = velikostiMezer.get(ZmenenyRadek);
-//
-//        if (mezeryKtereMenim.size() == 1) return;
-//
-//        int kolikrat = (int) (Math.random() * (3 + Main.iteraciBezZlepseni / 20)) + 2;
-//
-//        // kolikrat prehazim mezery v ramci jednoho radku
-//        for (int l = 0; l < kolikrat; l++) {
-//            prehodJednumezeruVJednomRadku(ZmenenyRadek, mezeryKtereMenim);
-//        }
-//
-//        // vypln tajenku a spocti fitness
-//        VyplnRadekTajenky(ZmenenyRadek, mezeryKtereMenim);
-//        fitnessKandidata = spoctiFitness();
-//
-//        Main.nejlepsiMezery = mezeryKtereMenim;
-//
-//       // System.out.println(ZmenenyRadek);
-//
-//       // printRadek(ZmenenyRadek, velikostiMezer.get(ZmenenyRadek));
-//
-//        // vrat puvodni hodnoty
-//        velikostiMezer.set(ZmenenyRadek, zalohaMezer);
-//        VyplnRadekTajenky(ZmenenyRadek, zalohaMezer);
-//
-//    }
-
     public void zmutuj() {
 
-        int zmenenyRadek = (int) (Math.random() * Main.vyska);
-        ArrayList<Integer> mezeryKtereMenim = velikostiMezer.get(zmenenyRadek);
+        int pocetzmen = 1;//(int) (Math.random() * (15)) + 2;;
 
-        if (mezeryKtereMenim.size() <= 1) return;
+        for (int i = 0; i < pocetzmen; i++) {
 
-        prehodJednumezeruVJednomRadku(zmenenyRadek, mezeryKtereMenim);
+            int x = (int) (Math.random() * vyska);
+            int y = (int) (Math.random() * sirka);
 
-        // vypln tajenku
-        VyplnRadekTajenky(zmenenyRadek, mezeryKtereMenim);
-    }
-
-    // Vyplni mezery, mezery 1 a vycentrovana doprostred
-    public void vyplnCelouTajenkuPodleLegendyAMezer() {
-
-        for (int i = 0; i < Main.vyska; i++) { // i je radek
-            VyplnRadekTajenky(i, velikostiMezer.get(i));
-        }
-    }
-
-    public void VyplnRadekTajenky(int radek, ArrayList<Integer> mezeryVRadku) {
-
-        ArrayList<Integer> polickaVRadku = Main.levaLegenda.get(radek);
-
-        int pointer = 0; // ukazatel na pozici, kterou menim
-
-        for (int j = 0; j < mezeryVRadku.get(0); j++) { // prvni mezera
-            tajenka[radek][pointer] = false;
-            pointer++;
+            tajenka[x][y] = !tajenka[x][y];
         }
 
-        //   System.out.println( radek + " * " + polickaVRadku.size() + " " + mezeryVRadku.size());
+        //int kolikrat = (int) (Math.random() * (3 + iteraciBezZlepseni / 20)) + 2;
 
-        for (int j = 0; j < polickaVRadku.size(); j++) { // pro vsehna policka
 
-            for (int k = 0; k < polickaVRadku.get(j); k++) {
-                tajenka[radek][pointer] = true;
-                pointer++;
-            }
-
-            for (int k = 0; k < mezeryVRadku.get(j + 1); k++) {
-                tajenka[radek][pointer] = false;
-                pointer++;
-            }
-        }
 
     }
 

@@ -19,19 +19,29 @@ public class Main {
     static int vyska, sirka;
     final static int ITERS = 5;
     final static int ISLANDS = 1;
-    final static int GENERATIONS = 1000000; // na tomto cisle nezalezi
+    final static int GENERATIONS = 10000000; // na tomto cisle nezalezi
     final static double CROSSINTERVAL = 0.001;
     final static double CATASTROPHY = 0.0002;
     final static boolean VIZ = true;
-    final static boolean CROWDING = true;
+    final static boolean CROWDING = false;
     static int fitnessCounted;
     final static int fitnessCountCeil = 200 * 50000; // 200 ohodnoceni ~ 1 generace
 
-    static int [][] horniLegenda;
-    static int [] sizesOfHorniLegenda;
-    static ArrayList<ArrayList<Integer>> levaLegenda;
+    static CUmodule module;
+    static CUfunction addFunction;
+    static CUfunction fitnessColumnFunction = new CUfunction();
 
-    static Pointer LegendaPointer;
+    static int [][] horniLegenda;
+    static int [] horniLegenda1D;
+    static int [] shiftsOfHorniLegenda;
+    static int [] sizesOfHorniLegenda;
+
+    static int [][]levaLegenda;
+    static int [] levaLegenda1D;
+    static int [] shiftsOfLevaLegenda;
+    static int [] sizesOfLevaLegenda;
+
+    static String input = "25x20.txt";
 
     static void readInput(String jmenoVstupu) {
 
@@ -46,61 +56,96 @@ public class Main {
 
         String radek = in.nextLine(); //"radky"
 
+        ArrayList<ArrayList<Integer>> levaLegendaTemp = new ArrayList<>();
         ArrayList<Integer> novyRadek;
+
+        int legendasize = 0;
+        int max = 0;
 
         while (true) {
             radek = in.nextLine();
-
             if (radek.startsWith("sloupce")) break;
 
             novyRadek = new ArrayList<>();
-
             radeksc = new Scanner(radek);
 
             while (radeksc.hasNextInt()) {
                 novyRadek.add(radeksc.nextInt());
+                legendasize++;
             }
-            levaLegenda.add(novyRadek);
+            novyRadek.add(0, 0); // first element is zero for needleman wunsch
+            legendasize++;
+            levaLegendaTemp.add(novyRadek);
+            if (max < novyRadek.size()) max = novyRadek.size();
         }
 
+        sizesOfLevaLegenda = new int[levaLegendaTemp.size()];
+        levaLegenda1D = new int[legendasize];
+        shiftsOfLevaLegenda = new int[levaLegendaTemp.size()];
+        shiftsOfLevaLegenda[0] = 0;
+        levaLegenda = new int[levaLegendaTemp.size()][max];
+
+        for (int i = 0; i < levaLegendaTemp.size(); i++) {
+            sizesOfLevaLegenda[i] = levaLegendaTemp.get(i).size();
+            if (0<i)
+                shiftsOfLevaLegenda[i] = shiftsOfLevaLegenda[i-1] + sizesOfLevaLegenda[i-1];
+
+            for (int j = 0; j < levaLegendaTemp.get(i).size() ; j++) {
+                Main.levaLegenda[i][j] = levaLegendaTemp.get(i).get(j);
+                levaLegenda1D[shiftsOfLevaLegenda[i] + j] = Main.levaLegenda[i][j];
+            }
+        }
+
+        //////////////////////
+
         ArrayList<ArrayList<Integer>> horniLegendaTemp = new ArrayList<>();
-        int max = 0;
+
+        max = 0;
+        legendasize = 0;
 
         while (in.hasNext()) {
             radek = in.nextLine();
-            novyRadek = new ArrayList<>();
 
+            novyRadek = new ArrayList<>();
             radeksc = new Scanner(radek);
+
             while (radeksc.hasNextInt()) {
                 novyRadek.add(0, radeksc.nextInt());
+                legendasize++;
             }
             novyRadek.add(0, 0); // first element is zero for needleman wunsch
+            legendasize++;
             horniLegendaTemp.add(novyRadek);
-
             if (max < novyRadek.size()) max = novyRadek.size();
-
         }
 
         sizesOfHorniLegenda = new int[horniLegendaTemp.size()];
-
+        horniLegenda1D = new int[legendasize];
+        shiftsOfHorniLegenda = new int[horniLegendaTemp.size()];
+        shiftsOfHorniLegenda[0] = 0;
         Main.horniLegenda = new int[horniLegendaTemp.size()][max];
 
         for (int i = 0; i < horniLegendaTemp.size() ; i++) {
-
             sizesOfHorniLegenda[i] = horniLegendaTemp.get(i).size();
+            if (0<i)
+                shiftsOfHorniLegenda[i] = shiftsOfHorniLegenda[i-1] + sizesOfHorniLegenda[i-1];
 
             for (int j = 0; j < horniLegendaTemp.get(i).size() ; j++) {
                 Main.horniLegenda[i][j] = horniLegendaTemp.get(i).get(j);
+                horniLegenda1D[shiftsOfHorniLegenda[i] + j] = Main.horniLegenda[i][j];
             }
         }
 
-        Pointer LegendaPointer = new Pointer();
-        JCuda.cudaMalloc(LegendaPointer, 4*sirka*max);
-
-
     }
 
-    public static void testGPU() throws IOException {
+    private static void loadConstantMemory(String name,  int[] array){
+        long sizeArray[] = {0};
+        CUdeviceptr Pointerr = new CUdeviceptr();
+        cuModuleGetGlobal(Pointerr, sizeArray, module, name);
+        cuMemcpyHtoD(Pointerr, Pointer.to(array), array.length * Sizeof.INT);
+    }
+
+    public static void setupGPU() throws IOException {
 
 
         // Enable exceptions and omit all subsequent error checks
@@ -117,33 +162,76 @@ public class Main {
         cuCtxCreate(context, 0, device);
 
         // Load the ptx file.
-        CUmodule module = new CUmodule();
+        module = new CUmodule();
         cuModuleLoad(module, ptxFileName);
 
-        // Obtain a function pointer to the "add" function.
-        CUfunction function = new CUfunction();
-        cuModuleGetFunction(function, module, "add");
 
 
-//        KernelLauncher kernelLauncher =
-//                KernelLauncher.create("kernels.cu", "test");
-//        CUmodule module0 = kernelLauncher.getModule();
+        cuModuleGetFunction(fitnessColumnFunction, module, "fitnessPerColumn");
+
+//        CUfunction testFunction = new CUfunction();
+//        cuModuleGetFunction(testFunction, module, "test");
+
+        loadConstantMemory( "legenda1DH", horniLegenda1D);
+        loadConstantMemory("velikostiLegendH",sizesOfHorniLegenda);
+        loadConstantMemory("posunyLegendH", shiftsOfHorniLegenda);
+        loadConstantMemory( "legenda1DL", levaLegenda1D);
+        loadConstantMemory("velikostiLegendL",sizesOfLevaLegenda);
+        loadConstantMemory("posunyLegendL", shiftsOfLevaLegenda);
+
+        loadConstantMemory("vyskaSirka", new int[]{vyska,sirka});
+
+    }
+
+    public static void testGPU() throws IOException {
+
+
+//        KernelLauncher kernelLauncher = KernelLauncher.create("kernels.cu", "test");
+////        module = kernelLauncher.getModule();
 //
-//        System.out.println("Obtaining pointer to constant symbol...");
-        CUdeviceptr constantMemoryPointer = new CUdeviceptr();
-
-        long sizeArray[] = {0};
-        cuModuleGetGlobal(constantMemoryPointer, sizeArray, module, "legenda2");
-        int size = (int)sizeArray[0];
-
-        int[] src = new int[] { 108, 5, 10 };
-
-        cuMemcpyHtoD(constantMemoryPointer, Pointer.to(src), 16);
-    //    int numElements2 = size / Sizeof.INT;
+//        cuModuleGetFunction(fitnessColumnFunction, module, "fitnessPerColumn");
 //
-        System.out.println("constantMemoryPointer: " + constantMemoryPointer + " size " + size);
+////        CUfunction testFunction = new CUfunction();
+////        cuModuleGetFunction(testFunction, module, "test");
+//
+//        loadConstantMemory( "legenda1D", horniLegenda1D);
+//
+//        loadConstantMemory("vyskaSirka", new int[]{vyska,sirka, horniLegenda1D.length});
+//
+//        loadConstantMemory("velikostiLegend",sizesOfHorniLegenda);
+//
+//        loadConstantMemory("posunyLegend", shiftsOfHorniLegenda);
+//
+//        CUdeviceptr deviceOutput = new CUdeviceptr();
+//        cuMemAlloc(deviceOutput, horniLegenda1D.length * Sizeof.INT);
+//
+//        Pointer kernelParameters = Pointer.to(
+//                Pointer.to(deviceOutput)
+//        );
+//
+//        cuLaunchKernel(fitnessColumnFunction,
+//                sirka, 1, 1,      // Grid dimension
+//                1, 1, 1,      // Block dimension
+//                0, null,               // Shared memory size and stream
+//                kernelParameters, null // Kernel- and extra parameters
+//        );
+//
+//        cuCtxSynchronize();
+//
+//        int hostOutput[] = new int[horniLegenda1D.length];
+//        cuMemcpyDtoH(Pointer.to(hostOutput), deviceOutput,
+//                horniLegenda1D.length * Sizeof.INT);
+//
+//        for(int i=0;i<15;i++)
+//        {
+//            System.out.print(hostOutput[i]+" ");
+//        }
+//        System.out.println();
 
 
+        CUmodule moduleTest = new CUmodule();
+        String ptxFileNameTest = preparePtxFile("test.cu");
+        cuModuleLoad(moduleTest, ptxFileNameTest);
         int numElements = 100000;
 
         // Allocate and fill the host input data
@@ -160,6 +248,7 @@ public class Main {
         cuMemAlloc(deviceInputA, numElements * Sizeof.FLOAT);
         cuMemcpyHtoD(deviceInputA, Pointer.to(hostInputA),
                 numElements * Sizeof.FLOAT);
+
         CUdeviceptr deviceInputB = new CUdeviceptr();
         cuMemAlloc(deviceInputB, numElements * Sizeof.FLOAT);
         cuMemcpyHtoD(deviceInputB, Pointer.to(hostInputB),
@@ -170,22 +259,20 @@ public class Main {
         cuMemAlloc(deviceOutput, numElements * Sizeof.FLOAT);
 
 
-
-        // Set up the kernel parameters: A pointer to an array
-        // of pointers which point to the actual values.
+        // Set up the kernel parameters: A pointer to an array of pointers which point to the actual values.
         Pointer kernelParameters = Pointer.to(
                 Pointer.to(new int[]{numElements}),
-                Pointer.to(Pointer.to(hostInputA)),
+                Pointer.to(deviceInputA),
                 Pointer.to(deviceInputB),
                 Pointer.to(deviceOutput)
         );
 
 
-
         // Call the kernel function.
         int blockSizeX = 256;
         int gridSizeX = (int) Math.ceil((double) numElements / blockSizeX);
-        cuLaunchKernel(function,
+
+        cuLaunchKernel(addFunction,
                 gridSizeX, 1, 1,      // Grid dimension
                 blockSizeX, 1, 1,      // Block dimension
                 0, null,               // Shared memory size and stream
@@ -222,16 +309,13 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        testGPU();
-
-        levaLegenda = new ArrayList<>();
-
-        readInput("40x30.txt");
-
-
+        readInput(input);
 
         sirka = horniLegenda.length;
-        vyska = levaLegenda.size();
+        vyska = levaLegenda.length;
+
+        setupGPU();
+      //  testGPU();
 
         for (int iterace = 0; iterace < ITERS; iterace++) {
 

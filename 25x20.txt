@@ -24,6 +24,7 @@ radky
 1 1 1 1
 1 1 1 1
 1 1
+
 sloupce - prvni cislo v radku znaci nejspodnejsi blok, posledni cislo v radku znaci vrchni blok
 8
 1 10 2
