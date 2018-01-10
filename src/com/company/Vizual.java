@@ -3,9 +3,6 @@ package com.company;
 import javax.swing.*;
 import java.awt.*;
 
-import static com.company.Main.sirka;
-import static com.company.Main.vyska;
-
 /**
  * Created by Čejkis on 20.04.2017.
  */
@@ -16,14 +13,14 @@ public class Vizual extends JFrame {
     JTextArea bestNow;
     int tloustka = 8;
 
-    public void printBorec(Individual i, int g, int islandnr){
+    public void printBorec(Individual i, int g){
 
         int[] taj = i.tajenka;
 
-        for (int j = 0; j < sirka; j++) {
-            for (int k = 0; k < vyska ; k++) {
+        for (int j = 0; j < Main.width; j++) {
+            for (int k = 0; k < Main.height; k++) {
 
-                if (taj[ vyska*j + k ] == 0)
+                if (taj[ Main.width *k + j ] == 0)
                     okna[j][k].setBackground(Color.WHITE);
                 else
                     okna[j][k].setBackground(Color.BLACK);
@@ -34,12 +31,12 @@ public class Vizual extends JFrame {
 
     }
 
-    public void printBestEver(Individual i, int g, int islandnr){
+    public void printBestEver(Individual i, int g){
 
         bestEver.setText(g + " " + i.fitness );
     }
 
-    public Vizual(int sirka, int vyska, int islandnr){
+    public Vizual(int sirka, int vyska){
 
         JFrame frame = new JFrame("Vizual");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -78,11 +75,9 @@ public class Vizual extends JFrame {
 
         frame.setSize(new Dimension(tloustka*sirka + tloustka, tloustka * vyska + 80));
 
-        if(islandnr < 4)
-            frame.setLocation(islandnr * frame.getWidth(),0);
-        else
-            frame.setLocation((islandnr -4)* frame.getWidth() ,tloustka * vyska + 75);
-        frame.setVisible(true);
+
+        frame.setLocation(0,0);
+
 
     }
 
