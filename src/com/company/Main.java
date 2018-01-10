@@ -17,7 +17,7 @@ public class Main {
     final static boolean CROWDING = true;
     final static boolean GPU = true;
 
-    static String input = "inputs/10x13.txt"; // 10x13 40x30
+    static String input = "inputs/25x20.txt"; // 10x13 40x30
 
     final static int fitnessCountCeil = 200 * 50000; // after this many fitness countings, program will stop
     static int fitnessCounted;
@@ -55,7 +55,6 @@ public class Main {
         }
 
         // Left legend
-
         String row = in.nextLine();
 
         ArrayList<ArrayList<Integer>> leftLegendTemp = new ArrayList<>();
@@ -198,15 +197,11 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        System.out.println((byte)(258));
-
         readInput(input);
 
         setupGPU();
 
         Island is;
-
-
 
         if (CROWDING){
             if (GPU)
@@ -220,16 +215,16 @@ public class Main {
 
         for (int g = 0; g < GENERATIONS; g++) {
 
-            if (g % 100 == 1) System.out.println(g + ". generation " +new SimpleDateFormat("HH:mm:ss").format(new Date()));
+            if (g % 100 == 0) {
+                System.out.print(g + ". generation " +new SimpleDateFormat("HH:mm:ss").format(new Date()));
+            }
+            is.printStatistics();
 
             if (fitnessCountCeil < fitnessCounted) {
                 break;
             }
 
             is.optimise(g);
-
-            //System.out.println("Best: " + is.bestScore);
-            //System.out.println("Current: " + is.bestInd.fitness);
         }
         System.out.println(fitnessCounted);
     }

@@ -35,7 +35,7 @@ public class CpuCrowdingIsland extends Island{
     }
 
 
-    public int rozdilnost(Individual i1, Individual i2) {
+    public int difference(Individual i1, Individual i2) {
 
         int diff = 0;
 
@@ -80,21 +80,21 @@ public class CpuCrowdingIsland extends Island{
             Individual p1 = population.get(n1);
             Individual p2 = population.get(n2);
 
-            Individual c1 = krizeni(p1, p2, g);  // TODO parallel
-            Individual c2 = krizeni(p1, p2, g);  // TODO parallel
+            Individual c1 = cross(p1, p2, g);
+            Individual c2 = cross(p1, p2, g);
 
             // mutate c1?
             if (Math.random() < pravdepodobnostMutaceDitete) {
-                c1.mutate();  // TODO parallel
+                c1.mutate();
             }
             if (Math.random() < pravdepodobnostMutaceDitete) {
-                c2.mutate();  // TODO parallel
+                c2.mutate();
             }
 
-            c1.countFitness(); // TODO parallel
-            c2.countFitness();  // TODO parallel
+            c1.countFitness();
+            c2.countFitness();
 
-            if (rozdilnost(p1, c1) + rozdilnost(p2, c2) < rozdilnost(p1, c2) + rozdilnost(p1, c2)) {
+            if (difference(p1, c1) + difference(p2, c2) < difference(p1, c2) + difference(p1, c2)) {
                 if (c1.fitness >= p1.fitness) {
                     population.set(n1, c1);
                 }
@@ -111,21 +111,13 @@ public class CpuCrowdingIsland extends Island{
             }
         }
 
-        //if (g % 50 == 0) {
-        // statistiky(population);
-        //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
-        //}
-        //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
-        //  System.out.println("fitness spocteno " + fitnessCounted);
-
         if (population.get(0).fitness == 0) {
-            statistiky(population);
-            System.out.println("MAM RESENI v generaci " + g);
+            System.out.println("Solution found in generation" + g);
         }
 
     }
 
-    static Individual krizeni(Individual a, Individual b, int gen) {
+    static Individual cross(Individual a, Individual b, int gen) {
 
         Individual c = new Individual(gen);
 
@@ -139,30 +131,23 @@ public class CpuCrowdingIsland extends Island{
         return c;
     }
 
-    public static void statistiky(ArrayList<Individual> populace) {
+    @Override
+    public void printStatistics() {
 
-        //  double prumernyFitness;
-        int nejvyssiFitness = populace.get(0).fitness;
-//        int nejnizsiFitness = population.get(0).fitness;
+        int bestFit = -100000;
+        float sum = 0;
 
-        // int suma = 0;
+        for (Individual i: population
+             ) {
 
-//        for (Individual i : population) {
-//            suma += i.fitness;
-//
-//            if (i.fitness > nejvyssiFitness) {
-//                nejvyssiFitness = i.fitness;
-//            }
-//            if (i.fitness < nejnizsiFitness) {
-//                nejnizsiFitness = i.fitness;
-//            }
-//        }
-//
-//        prumernyFitness = suma / (double)population.size();
+            sum += i.fitness;
 
-        //System.out.println("Ohodnoceni;" + fitnessCounted + ";NEJLEPSI; " + nejvyssiFitness);
-        System.out.print(nejvyssiFitness + ";");
+            if (bestFit < i.fitness) {
+                bestFit = i.fitness;
+            }
+        }
 
+        System.out.println(" best: " + bestFit + " avg: " + sum / popSize);
     }
 
     // tournamentovou metodou vyberu nove rodice

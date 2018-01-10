@@ -19,5 +19,7 @@ public abstract class Island {
 
     public abstract void optimise(int g);
 
+    public abstract void printStatistics();
+
 
 }

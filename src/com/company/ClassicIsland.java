@@ -101,7 +101,7 @@ public class ClassicIsland extends Island{
             dite.countFitness(); // TODO parallel
         }
 
-        // nahodne zmutuju cast stare population  - bez krizeni
+        // nahodne zmutuju cast stare population  - bez cross
         for (Individual i : population) {
 
             if (i == bestInd) continue;
@@ -129,8 +129,8 @@ public class ClassicIsland extends Island{
         Collections.sort(population);
 
         if (population.get(0).fitness == 0) {
-            statistiky(population);
-            //System.out.println("MAM RESENI v generaci " + g);
+            printStatistics();
+            System.out.println("Solution in generation " + g);
             //population.get(0).printPole();
             return;
         }
@@ -156,10 +156,12 @@ public class ClassicIsland extends Island{
         return c;
     }
 
-    public static void statistiky(ArrayList<Individual> populace) {
+    @Override
+    public void printStatistics() {
+
+        int nejvyssiFitness = population.get(0).fitness;
 
         //  double prumernyFitness;
-        int nejvyssiFitness = populace.get(0).fitness;
 //        int nejnizsiFitness = population.get(0).fitness;
 
         // int suma = 0;
