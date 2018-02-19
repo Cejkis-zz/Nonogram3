@@ -6,6 +6,8 @@ import static com.company.Main.*;
 
 /**
  * Created by Čejkis on 19.04.2017.
+ *
+ * Classic evolutionary island
  */
 public class ClassicIsland extends Island{
 
@@ -21,7 +23,15 @@ public class ClassicIsland extends Island{
 
         for (int i = 0; i < popSize; i++) {
 
-            Individual j = new Individual(0);
+            Individual j;
+
+            if (Main.BINARYINDIVIDUAL){ // TODO should be factory
+                j = new IndividualBinary(0);
+            }
+            else{
+                IndividualSmart ie = new IndividualSmart();
+                j =ie;
+            }
 
             for (int k = 0; k < Main.height * 5; k++) {
                 j.mutate();
@@ -34,8 +44,7 @@ public class ClassicIsland extends Island{
 
     }
 
-
-
+    
     public void optimise(int g) {
 
         // nejlepsiho jedince zachovam
@@ -43,8 +52,8 @@ public class ClassicIsland extends Island{
 
         // provedu local search u nejlepsiho
 
-        if (Main.VIZ && g % 5 == 0)
-            frame.printBorec(bestInd, g);
+        if (Main.VIZ && g % 100 == 0)
+            frame.vizualizeBestInd(bestInd, g);
 
 //        if( g % INTERVALLS == 0 && g != 0) {
 //
@@ -64,141 +73,110 @@ public class ClassicIsland extends Island{
             bestScore = bestInd.fitness;
             if (Main.VIZ)
                 frame.printBestEver(bestInd, g);
-            //System.out.println(islandNr + " " + bestInd.birth);
+            //System.out.println(islandNr + " " + bestInd.genOfBirth);
         }
 
-        // vyselektuju rodice a vytvorim deti
+        // select parents and create children
         ArrayList<Individual> rodiceAsArray = new ArrayList<>(selectParents(population));
         ArrayList<Individual> offspring = new ArrayList<>();
 
-        for (int i = 0; i < pocetDeti; i++) {
-            offspring.add(
-                    krizeni(rodiceAsArray.get((int) (Math.random() * velikostSelekce)),
-                            rodiceAsArray.get((int) (Math.random() * velikostSelekce)), g
-                    )  // TODO parallel
-            );
+        for (int i = 0; i < numberChildren; i++) {
+            Individual p1 = rodiceAsArray.get((int) (Math.random() * selectionSize));
+            Individual p2 = rodiceAsArray.get((int) (Math.random() * selectionSize));
+            offspring.add(p1.cross(p2, g));
         }
 
-        //jeste zkrizim nejlepsiho s nekterymi jedinci
+        // cross the best one with some individuals
         for (int i = 1; i < popSize; i++) {
-            if (Math.random() < pravdepodobnostKrizeniSNejlepsim)
-                offspring.add(krizeni(bestInd, population.get(i), g));  // TODO parallel
+            if (Math.random() < probabilityCrossBest)
+                offspring.add(bestInd.cross(population.get(i), g));
         }
 
-        // zmutuju deti
+        // mutate children
         for (Individual dite : offspring) {
-
-//                    if (dite.fitness == 0) {
-//                        System.out.println("** MAM RESENI v generaci " + g);
-//                        dite.printPole();
-//                        return;
-//                    }
-
-            if (Math.random() < pravdepodobnostMutaceDitete) {
-                dite.mutate();  // TODO parallel
+            if (Math.random() < probChildMutation) {
+                dite.mutate();
             }
-
-            dite.countFitness(); // TODO parallel
+            dite.countFitness();
         }
 
-        // nahodne zmutuju cast stare population  - bez cross
+        // randomly mutate old population and merge with children
         for (Individual i : population) {
 
             if (i == bestInd) continue;
 
-            if (Math.random() < pravdpodobnostMutacePopulace) {
-                i.mutate();  // TODO parallel
-                i.countFitness();  // TODO parallel
+            if (Math.random() < probPopulationMutation) {
+                i.mutate();
+                i.countFitness();
             }
             offspring.add(i);
         }
 
-        offspring.add(bestInd);
+        //offspring.add(bestInd);
 
         population = offspring;
-
 
         //if (g % 50 == 0) {
         // statistiky(population);
         //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
         //}
 
-        //  System.out.println(" V case " +(double)(System.nanoTime() - startTime) / 1000000000.0);
-        //  System.out.println("fitness spocteno " + fitnessCounted);
 
         Collections.sort(population);
 
         if (population.get(0).fitness == 0) {
             printStatistics();
             System.out.println("Solution in generation " + g);
-            //population.get(0).printPole();
+            //population.get(0).printGrid();
             return;
         }
 
-        //odeberu ty horsi, at mam opet puvodni pocet
+        // remove the worst ones, so the pop size is still the same
         for (int i = population.size() - 1; i >= popSize; i--) {
             population.remove(i);
         }
 
     }
 
-    static Individual krizeni(Individual a, Individual b, int gen) {
 
-        Individual c = new Individual(gen);
-
-        for (int i = 0; i < Main.gridSize; i++) {
-            if (Math.random() > 0.5)
-                c.tajenka[i] = a.tajenka[i];
-            else
-                c.tajenka[i] = b.tajenka[i];
-        }
-
-        return c;
-    }
-
+    
     @Override
     public void printStatistics() {
 
-        int nejvyssiFitness = population.get(0).fitness;
+        int biggestFitness = population.get(0).fitness;
 
-        //  double prumernyFitness;
-//        int nejnizsiFitness = population.get(0).fitness;
+        int sum = 0;
 
-        // int suma = 0;
+        for (Individual i : population) {
+            //System.out.print(i.fitness + " ");
 
-//        for (Individual i : population) {
-//            suma += i.fitness;
-//
-//            if (i.fitness > nejvyssiFitness) {
-//                nejvyssiFitness = i.fitness;
-//            }
-//            if (i.fitness < nejnizsiFitness) {
-//                nejnizsiFitness = i.fitness;
-//            }
-//        }
-//
-//        prumernyFitness = suma / (double)population.size();
+            sum += i.fitness;
+            if (i.fitness > biggestFitness) {
+                biggestFitness = i.fitness;
+            }
+        }
 
-        //System.out.println("Ohodnoceni;" + fitnessCounted + ";NEJLEPSI; " + nejvyssiFitness);
-        System.out.print(nejvyssiFitness + ";");
+        double avgFitness = sum / (double)population.size();
+
+        System.out.println("AvgFitness " + (int)avgFitness + "; BestFitness: " + biggestFitness);
 
     }
 
-    public static Set<Individual> selectParents(ArrayList<Individual> populace) {
+    public static Set<Individual> selectParents(ArrayList<Individual> population) {
 
-        Set<Individual> rodice = new HashSet<>();
+        Set<Individual> parents = new HashSet<>();
 
-        while (rodice.size() != velikostSelekce) {
+        while (parents.size() != selectionSize) {
 
-            Individual a = populace.get((int) (Math.random() * populace.size()));
-            Individual b = populace.get((int) (Math.random() * populace.size()));
+            Individual a = population.get((int) (Math.random() * population.size()));
+            Individual b = population.get((int) (Math.random() * population.size()));
 
             if (a.fitness > b.fitness)
-                rodice.add(a);
-            else rodice.add(b);
+                parents.add(a);
+            else parents.add(b);
         }
 
-        return rodice;
+        return parents;
     }
 
 }

@@ -1,17 +1,14 @@
 package com.company;
 
-import java.util.ArrayList;
-
 public abstract class Island {
 
-    static int popSize = 256;
-    static int velikostSelekce = 70;
-    static int pocetDeti = 100;
+    static int popSize = 320;
+    static int selectionSize = 50;
+    static int numberChildren = 320;
 
-    static double pravdepodobnostKrizeniSNejlepsim = 0.0;
-    static double pravdpodobnostMutacePopulace = 1;
-    static double pravdepodobnostMutaceDitete = 1;
-
+    static double probabilityCrossBest = 0.1;
+    static double probPopulationMutation = 0.1;
+    static double probChildMutation = 0.9;
 
     int bestScore = -1000000000;
 

@@ -7,13 +7,13 @@ import static com.company.Main.*;
 /**
  * Created by Čejkis on 19.04.2017.
  */
-public class CpuCrowdingIsland extends Island{
+public class CPUCrowdingIsland extends Island{
 
     public ArrayList<Individual> population;
 
     private Vizual frame;
 
-    public CpuCrowdingIsland(){
+    public CPUCrowdingIsland(){
 
         if (Main.VIZ)
             frame = new Vizual(width, Main.height);
@@ -22,7 +22,15 @@ public class CpuCrowdingIsland extends Island{
 
         for (int i = 0; i < popSize; i++) {
 
-            Individual j = new Individual(0);
+            Individual j;
+
+            if (Main.BINARYINDIVIDUAL){ // TODO should be factory
+                j = new IndividualBinary(0);
+            }
+            else{
+                IndividualSmart ie = new IndividualSmart();
+                j = ie;
+            }
 
             for (int k = 0; k < Main.height * 5; k++) {
                 j.mutate();
@@ -35,18 +43,7 @@ public class CpuCrowdingIsland extends Island{
     }
 
 
-    public int difference(Individual i1, Individual i2) {
 
-        int diff = 0;
-
-        for (int i = 0; i < gridSize; i++) {
-            if (i1.tajenka[i] != i2.tajenka[i]) {
-                diff++;
-            }
-        }
-
-        return diff;
-    }
 
     @Override
     public void optimise(int g) {
@@ -60,8 +57,8 @@ public class CpuCrowdingIsland extends Island{
             }
         }
 
-        if (Main.VIZ && g % 10 == 0) // kazdych 10 generaci updatuju vizualizaci
-            frame.printBorec(bestInd, g);
+        if (Main.VIZ && g % 10 == 0) // update vizualization every 10 generations
+            frame.vizualizeBestInd(bestInd, g);
 
         if (bestInd.fitness > bestScore) {
             bestScore = bestInd.fitness;
@@ -69,7 +66,7 @@ public class CpuCrowdingIsland extends Island{
                 frame.printBestEver(bestInd, g);
         }
 
-        // sparuju a vytvorim deti
+        // make pair and create children
         Collections.shuffle(population);
 
         for (int i = 0; i < popSize; i += 2) {
@@ -80,21 +77,21 @@ public class CpuCrowdingIsland extends Island{
             Individual p1 = population.get(n1);
             Individual p2 = population.get(n2);
 
-            Individual c1 = cross(p1, p2, g);
-            Individual c2 = cross(p1, p2, g);
+            Individual c1 = p1.cross(p2, g);
+            Individual c2 = p1.cross(p2, g);
 
             // mutate c1?
-            if (Math.random() < pravdepodobnostMutaceDitete) {
+            if (Math.random() < probChildMutation) {
                 c1.mutate();
             }
-            if (Math.random() < pravdepodobnostMutaceDitete) {
+            if (Math.random() < probChildMutation) {
                 c2.mutate();
             }
 
             c1.countFitness();
             c2.countFitness();
 
-            if (difference(p1, c1) + difference(p2, c2) < difference(p1, c2) + difference(p1, c2)) {
+            if (p1.difference(c1) + p2.difference(c2) < p1.difference(c2) + p1.difference(c2)) {
                 if (c1.fitness >= p1.fitness) {
                     population.set(n1, c1);
                 }
@@ -117,19 +114,7 @@ public class CpuCrowdingIsland extends Island{
 
     }
 
-    static Individual cross(Individual a, Individual b, int gen) {
 
-        Individual c = new Individual(gen);
-
-        for (int i = 0; i < Main.gridSize; i++) {
-            if (Math.random() > 0.5)
-                c.tajenka[i] = a.tajenka[i];
-            else
-                c.tajenka[i] = b.tajenka[i];
-        }
-
-        return c;
-    }
 
     @Override
     public void printStatistics() {
@@ -150,22 +135,5 @@ public class CpuCrowdingIsland extends Island{
         System.out.println(" best: " + bestFit + " avg: " + sum / popSize);
     }
 
-    // tournamentovou metodou vyberu nove rodice
-    public static Set<Individual> selectParents(ArrayList<Individual> populace) {
-
-        Set<Individual> rodice = new HashSet<>();
-
-        while (rodice.size() != velikostSelekce) {
-
-            Individual a = populace.get((int) (Math.random() * populace.size()));
-            Individual b = populace.get((int) (Math.random() * populace.size()));
-
-            if (a.fitness > b.fitness)
-                rodice.add(a);
-            else rodice.add(b);
-        }
-
-        return rodice;
-    }
 
 }

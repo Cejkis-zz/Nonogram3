@@ -6,6 +6,7 @@ radky
 2 2
 3 3
 8
+
 sloupce - prvni cislo v radku znaci nejspodnejsi blok, posledni cislo v radku znaci vrchni blok
 2 2
 3 3

@@ -11,19 +11,19 @@ import static jcuda.driver.JCudaDriver.*;
 
 public class Main {
 
-    static int height, width, gridSize;
-    final static int GENERATIONS = 10000;
+    // main controls
     final static boolean VIZ = false;
     final static boolean CROWDING = true;
-    final static boolean GPU = true;
+    final static boolean BINARYINDIVIDUAL = true;
+    static boolean GPU = true;
+    static String input = "inputs/25x20.txt"; // 10x13 25x20 40x30
 
-    static String input = "inputs/25x20.txt"; // 10x13 40x30
+    static int GENERATIONS = 10000;
+    static int height, width, gridSize;
 
-    final static int fitnessCountCeil = 200 * 50000; // after this many fitness countings, program will stop
-    static int fitnessCounted;
-
-    // reference to kernel
+    // references to kernels
     static CUmodule optimisePopulationModule;
+    static CUmodule updatePopulationModule;
 
     // references to kernel functions
     static CUfunction createChildrenFunction = new CUfunction();
@@ -31,6 +31,10 @@ public class Main {
     static CUfunction fitnessOfAllColumnsFunction = new CUfunction();
     static CUfunction fitnessOfAllRowsFunction = new CUfunction();
     static CUfunction evolutionFunction = new CUfunction();
+
+    // input arrays
+    static ArrayList<ArrayList<Integer>> leftLegendAL;
+    static ArrayList<ArrayList<Integer>> upperLegendAL;
 
     static int[][] upperLegend;
     static int[] upperLegend1D;
@@ -43,21 +47,14 @@ public class Main {
     static int[] sizesOfLeftLegend;
 
     // parses input to legends
-    static void readInput(String filename) {
+    static void readInput(Scanner in) {
 
-        Scanner in = null;
         Scanner rowScanner;
-
-        try {
-            in = new Scanner(new FileReader(filename));
-        } catch (FileNotFoundException ex) {
-            System.out.println("Cannot find file " + filename);
-        }
 
         // Left legend
         String row = in.nextLine();
 
-        ArrayList<ArrayList<Integer>> leftLegendTemp = new ArrayList<>();
+        leftLegendAL = new ArrayList<>();
         ArrayList<Integer> newRow;
 
         int legendSize = 0;
@@ -78,32 +75,33 @@ public class Main {
                 newRow.add(rowScanner.nextInt());
                 legendSize++;
             }
-            newRow.add(0, 0); // first element is zero for needleman wunsch
+            newRow.add(0, 0); // first element is zero for needlemanWunschOptimized wunsch
             legendSize++;
-            leftLegendTemp.add(newRow);
+            leftLegendAL.add(newRow);
             if (max < newRow.size()) max = newRow.size();
         }
 
-        sizesOfLeftLegend = new int[leftLegendTemp.size()];
+        sizesOfLeftLegend = new int[leftLegendAL.size()];
         leftLegend1D = new int[legendSize];
-        shiftsOfLeftLegend = new int[leftLegendTemp.size()];
+        shiftsOfLeftLegend = new int[leftLegendAL.size()];
         shiftsOfLeftLegend[0] = 0;
-        leftLegend = new int[leftLegendTemp.size()][max];
+        leftLegend = new int[leftLegendAL.size()][max];
 
-        for (int i = 0; i < leftLegendTemp.size(); i++) {
-            sizesOfLeftLegend[i] = leftLegendTemp.get(i).size();
+        for (int i = 0; i < leftLegendAL.size(); i++) {
+            sizesOfLeftLegend[i] = leftLegendAL.get(i).size();
             if (0 < i)
                 shiftsOfLeftLegend[i] = shiftsOfLeftLegend[i - 1] + sizesOfLeftLegend[i - 1];
 
-            for (int j = 0; j < leftLegendTemp.get(i).size(); j++) {
-                Main.leftLegend[i][j] = leftLegendTemp.get(i).get(j);
+            for (int j = 0; j < leftLegendAL.get(i).size(); j++) {
+                Main.leftLegend[i][j] = leftLegendAL.get(i).get(j);
                 leftLegend1D[shiftsOfLeftLegend[i] + j] = Main.leftLegend[i][j];
             }
+            leftLegendAL.get(i).remove(0);
         }
 
         ////////////////////// upper legend
 
-        ArrayList<ArrayList<Integer>> upperLegendTemp = new ArrayList<>();
+        upperLegendAL = new ArrayList<>();
 
         max = 0;
         legendSize = 0;
@@ -118,34 +116,34 @@ public class Main {
                 newRow.add(0, rowScanner.nextInt());
                 legendSize++;
             }
-            newRow.add(0, 0); // first element is zero for needleman wunsch
+            newRow.add(0, 0); // first element is zero for needlemanWunschOptimized wunsch
             legendSize++;
-            upperLegendTemp.add(newRow);
+            upperLegendAL.add(newRow);
             if (max < newRow.size()) max = newRow.size();
         }
 
-        sizesOfUpperLegend = new int[upperLegendTemp.size()];
+        sizesOfUpperLegend = new int[upperLegendAL.size()];
         upperLegend1D = new int[legendSize];
-        shiftsOfUpperLegend = new int[upperLegendTemp.size()];
+        shiftsOfUpperLegend = new int[upperLegendAL.size()];
         shiftsOfUpperLegend[0] = 0;
-        upperLegend = new int[upperLegendTemp.size()][max];
+        upperLegend = new int[upperLegendAL.size()][max];
 
-        for (int i = 0; i < upperLegendTemp.size(); i++) {
-            sizesOfUpperLegend[i] = upperLegendTemp.get(i).size();
+        for (int i = 0; i < upperLegendAL.size(); i++) {
+            sizesOfUpperLegend[i] = upperLegendAL.get(i).size();
             if (0 < i)
                 shiftsOfUpperLegend[i] = shiftsOfUpperLegend[i - 1] + sizesOfUpperLegend[i - 1];
 
-            for (int j = 0; j < upperLegendTemp.get(i).size(); j++) {
-                upperLegend[i][j] = upperLegendTemp.get(i).get(j);
+            for (int j = 0; j < upperLegendAL.get(i).size(); j++) {
+                upperLegend[i][j] = upperLegendAL.get(i).get(j);
                 upperLegend1D[shiftsOfUpperLegend[i] + j] = upperLegend[i][j];
             }
+            upperLegendAL.get(i).remove(0);
         }
 
         //
         width = upperLegend.length;
         height = leftLegend.length;
         gridSize = width * height;
-
     }
 
     // initializes constant memory of name in module and sets its value to array
@@ -165,6 +163,9 @@ public class Main {
         // Create the PTX file by calling the NVCC
         String ptxFileName = preparePtxFile("kernels.cu");
 
+        // Create the PTX file by calling the NVCC
+        String ptxFileNameUpdate = preparePtxFile("update.cu");
+
         // Initialize the driver and create a context for the first device.
         cuInit(0);
         CUdevice device = new CUdevice();
@@ -176,9 +177,13 @@ public class Main {
         optimisePopulationModule = new CUmodule();
         cuModuleLoad(optimisePopulationModule, ptxFileName);
 
+        // Load the ptx file.
+        updatePopulationModule = new CUmodule();
+        cuModuleLoad(updatePopulationModule, ptxFileNameUpdate);
+
         // load functions
         cuModuleGetFunction(createChildrenFunction, optimisePopulationModule, "createChildren");
-        cuModuleGetFunction(updatePopulationFunction, optimisePopulationModule, "updatePopulation");
+        cuModuleGetFunction(updatePopulationFunction, updatePopulationModule, "updatePopulation");
 
         cuModuleGetFunction(fitnessOfAllColumnsFunction, optimisePopulationModule, "countFitnessOfAllColumns");
         cuModuleGetFunction(fitnessOfAllRowsFunction, optimisePopulationModule, "countFitnessOfAllRows");
@@ -193,13 +198,66 @@ public class Main {
         initConstantMemory(optimisePopulationModule, "sizesOfLegendsL", sizesOfLeftLegend);
         initConstantMemory(optimisePopulationModule, "shiftsOfLegendsL", shiftsOfLeftLegend);
         initConstantMemory(optimisePopulationModule, "heightWidth", new int[]{height, width, gridSize, Island.popSize});
+        initConstantMemory(updatePopulationModule, "heightWidth", new int[]{height, width, gridSize, Island.popSize});
+    }
+
+    public static Scanner readArgs(String[] args){
+        Scanner inputScanner = null;
+
+        for (String arg: args) {
+
+            if (arg.equals("cpu")){
+                GPU = false;
+                System.out.println("using CPU");
+                continue;
+            }
+
+            if (arg.equals("par")){ // parallel computation of individual
+                GPU = true;
+                GPUCrowdingIsland.fitnessSingleThread = false;
+                continue;
+            }
+
+            if (arg.equals("ser")){ // serial computation of individual
+                GPU = true;
+                GPUCrowdingIsland.fitnessSingleThread = true;
+                continue;
+            }
+
+            try {
+                int number = Integer.parseInt(arg);
+
+                if (number < 50){
+                    GPUCrowdingIsland.nrSMX = number;
+                }else{
+                    GENERATIONS = number;
+                }
+
+            } catch (NumberFormatException e) {
+                try {
+                    inputScanner = new Scanner(new FileReader(arg));
+                } catch (FileNotFoundException ex) {
+                    System.err.println("Use argument \"cpu\",\"par\" or \"ser\". Use integer to set number of SMs. Your argument:" + arg + " was used as filename and no file was found.");
+                    System.exit(1);
+                }
+            }
+        }
+
+        if (inputScanner == null){
+            System.err.println("Please specify input location.");
+            System.exit(1);
+        }
+
+        return inputScanner;
     }
 
     public static void main(String[] args) throws IOException {
 
-        readInput(input);
+        //Scanner s =readArgs(args);
+        readInput(new Scanner(new FileReader(input)));
 
-        setupGPU();
+        if (GPU)
+            setupGPU();
 
         Island is;
 
@@ -207,7 +265,7 @@ public class Main {
             if (GPU)
              is = new GPUCrowdingIsland();
             else
-             is = new CpuCrowdingIsland();
+             is = new CPUCrowdingIsland();
         }else
             is = new ClassicIsland();
 
@@ -215,18 +273,13 @@ public class Main {
 
         for (int g = 0; g < GENERATIONS; g++) {
 
-            if (g % 100 == 0) {
-                System.out.print(g + ". generation " +new SimpleDateFormat("HH:mm:ss").format(new Date()));
-            }
-            is.printStatistics();
-
-            if (fitnessCountCeil < fitnessCounted) {
-                break;
+            if (g % 1 == 0) {
+                System.out.print(g + ". generation " +new SimpleDateFormat("HH:mm:ss ").format(new Date()));
+                is.printStatistics();
             }
 
             is.optimise(g);
         }
-        System.out.println(fitnessCounted);
     }
 
 
