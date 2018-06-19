@@ -12,11 +12,11 @@ import static jcuda.driver.JCudaDriver.*;
 public class Main {
 
     // main controls
-    final static boolean VIZ = false;
-    final static boolean CROWDING = true;
-    final static boolean BINARYINDIVIDUAL = true;
-    static boolean GPU = true;
-    static String input = "inputs/25x20.txt"; // 10x13 25x20 40x30
+    static boolean VIZ = false;
+    static boolean CROWDING = false;
+    static boolean BINARYINDIVIDUAL = false;
+    static boolean GPU = false;
+    static String input = "inputs/40x40.txt"; // 10x13 25x20 40x30
 
     static int GENERATIONS = 10000;
     static int height, width, gridSize;
@@ -206,12 +206,6 @@ public class Main {
 
         for (String arg: args) {
 
-            if (arg.equals("cpu")){
-                GPU = false;
-                System.out.println("using CPU");
-                continue;
-            }
-
             if (arg.equals("par")){ // parallel computation of individual
                 GPU = true;
                 GPUCrowdingIsland.fitnessSingleThread = false;
@@ -221,6 +215,21 @@ public class Main {
             if (arg.equals("ser")){ // serial computation of individual
                 GPU = true;
                 GPUCrowdingIsland.fitnessSingleThread = true;
+                continue;
+            }
+
+            if (arg.equals("viz")){ // serial computation of individual
+                VIZ = true;
+                continue;
+            }
+
+            if (arg.equals("bin")){ // serial computation of individual
+                BINARYINDIVIDUAL = true;
+                continue;
+            }
+
+            if (arg.equals("dc")){ // serial computation of individual
+                CROWDING = true;
                 continue;
             }
 
@@ -253,8 +262,9 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        //Scanner s =readArgs(args);
-        readInput(new Scanner(new FileReader(input)));
+        Scanner s =readArgs(args);
+        readInput(s);
+        // readInput(new Scanner(new FileReader(input)));
 
         if (GPU)
             setupGPU();

@@ -65,7 +65,7 @@ public class Vizual extends JFrame {
 
         frame.setSize(new Dimension(thickness *sirka + thickness, thickness * vyska + 80));
 
-
+        frame.setVisible(true);
         frame.setLocation(0,0);
 
 
