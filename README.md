@@ -14,9 +14,15 @@ There is also simple vizualization of the best individual.
 There are several example inputs attached.
 
 ## Usage
-Application is controlled by command line parameters. Example: java -jar Nonogram.jar inputs/40x40.txt 4 par 1000"
+Application is controlled by command line parameters.
 
-First is path to the puzzle (must be in specific format, see examples)
-Number od used CUDA multiprocessors (default is 2)
-Computational mode ('cpu' - cpu computation, 'ser' - serial computation of fitness on gpu, 'par' - parallel computation of fitness on gpu)
+use these paramters:
+par, ser - to turn on CUDA computation. par and ser means whether individual's fitness will be computed in parallel or serially. Serial is faster. Default: CPU will be used
+viz - turn vizualization on. Default: off. CPU only
+bin - use binary individual. Default: Smart representation. GPU uses only binary.
+dc - use deterministic crowding. Default: normal evolution. CPU onlu.
+integer number - if it's lower than 50, it will be used as number of SMP's. If it's higher, it will be used as number of generations. Default: 2 SMP's and 10000 generations
+Every string that doesn't match these will be used as a path to input file of puzzle.
+
+Example: java -jar Nonogram.jar inputs/40x40.txt 4 par 1000"
 
