@@ -10,7 +10,8 @@ import static com.company.Main.*;
  * Created by cejkis on 8.11.15.
  */
 
-public class IndividualSmart extends Individual{
+// Individual, that is represented by sizes of spaces between blocks
+public class IndividualSmart extends AbstractIndividual {
 
     ArrayList<ArrayList<Integer>> sizesOfSpaces;
 
@@ -39,7 +40,7 @@ public class IndividualSmart extends Individual{
     }
 
     // for local search
-    public IndividualSmart(Individual ss){
+    public IndividualSmart(AbstractIndividual ss){
 
         IndividualSmart s = (IndividualSmart) ss;
 
@@ -292,7 +293,7 @@ public class IndividualSmart extends Individual{
     }
 
     @Override
-    public Individual cross(Individual b, int gen) {
+    public AbstractIndividual cross(AbstractIndividual b, int gen) {
         IndividualSmart c = new IndividualSmart(gen);
 
         for (int i = 0; i < height; i++) {
@@ -321,7 +322,7 @@ public class IndividualSmart extends Individual{
     }
 
     @Override
-    public int difference(Individual i1) {
+    public int difference(AbstractIndividual i1) {
         IndividualSmart is = (IndividualSmart) i1;
         int diff = 0;
 
@@ -352,7 +353,7 @@ public class IndividualSmart extends Individual{
     }
 
     @Override
-    public int compareTo(Individual individual) {
+    public int compareTo(AbstractIndividual individual) {
         return individual.fitness - fitness;
     }
 
@@ -365,7 +366,7 @@ public class IndividualSmart extends Individual{
 
     static int itersWithoutImprovement;
 
-    public Individual localOptimalization(int numberOfOptimalization){
+    public AbstractIndividual localOptimalization(int numberOfOptimalization){
 
         bestFitnessEver = fitness;
 
@@ -374,7 +375,7 @@ public class IndividualSmart extends Individual{
         if(bestFitnessEver >= -26 ) tolerance = 2;
         if(bestFitnessEver >= -2 ) tolerance = 0;
 
-        Individual bestIn = new IndividualSmart(this);
+        AbstractIndividual bestIn = new IndividualSmart(this);
 
         // optimalization cycle
         for (int p = 0; p < numberOfOptimalization; p++) {

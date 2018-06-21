@@ -9,7 +9,7 @@ import static com.company.Main.*;
  */
 public class CPUCrowdingIsland extends Island{
 
-    public ArrayList<Individual> population;
+    public ArrayList<AbstractIndividual> population;
 
     private Vizual frame;
 
@@ -18,11 +18,11 @@ public class CPUCrowdingIsland extends Island{
         if (Main.VIZ)
             frame = new Vizual(width, Main.height);
 
-        population = new ArrayList<Individual>() ;
+        population = new ArrayList<AbstractIndividual>() ;
 
         for (int i = 0; i < popSize; i++) {
 
-            Individual j;
+            AbstractIndividual j;
 
             if (Main.BINARYINDIVIDUAL){ // TODO should be factory
                 j = new IndividualBinary(0);
@@ -50,7 +50,7 @@ public class CPUCrowdingIsland extends Island{
 
         int bestScr = -1000000;
 
-        for (Individual i : population) {
+        for (AbstractIndividual i : population) {
             if (bestScr < i.fitness) {
                 bestInd = i;
                 bestScr = i.fitness;
@@ -74,11 +74,11 @@ public class CPUCrowdingIsland extends Island{
             int n1 = i;
             int n2 = i + 1;
 
-            Individual p1 = population.get(n1);
-            Individual p2 = population.get(n2);
+            AbstractIndividual p1 = population.get(n1);
+            AbstractIndividual p2 = population.get(n2);
 
-            Individual c1 = p1.cross(p2, g);
-            Individual c2 = p1.cross(p2, g);
+            AbstractIndividual c1 = p1.cross(p2, g);
+            AbstractIndividual c2 = p1.cross(p2, g);
 
             // mutate c1?
             if (Math.random() < probChildMutation) {
@@ -122,7 +122,7 @@ public class CPUCrowdingIsland extends Island{
         int bestFit = -100000;
         float sum = 0;
 
-        for (Individual i: population
+        for (AbstractIndividual i: population
              ) {
 
             sum += i.fitness;

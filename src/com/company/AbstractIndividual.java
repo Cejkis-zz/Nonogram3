@@ -2,19 +2,19 @@ package com.company;
 
 import javax.swing.*;
 
-public abstract class Individual implements Comparable<Individual> {
+public abstract class AbstractIndividual implements Comparable<AbstractIndividual> {
 
     protected int fitness;
     protected int genOfBirth;
 
     public abstract void  countFitness();
-    public abstract Individual cross(Individual b, int gen);
+    public abstract AbstractIndividual cross(AbstractIndividual b, int gen);
     public abstract void mutate();
-    public abstract int difference(Individual i);
+    public abstract int difference(AbstractIndividual i);
     public abstract void printToViz(JTextArea[][] okna);
 
     @Override
-    public int compareTo(Individual individual) {
+    public int compareTo(AbstractIndividual individual) {
         return individual.fitness - fitness;
     }
 

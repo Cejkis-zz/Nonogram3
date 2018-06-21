@@ -6,6 +6,7 @@ import java.awt.*;
 /**
  * Created by Čejkis on 20.04.2017.
  */
+// Class for vizualizing best individual in population
 public class Vizual extends JFrame {
 
     JTextArea[][] windows;
@@ -13,7 +14,7 @@ public class Vizual extends JFrame {
     JTextArea bestNow;
     int thickness = 8;
 
-    public void vizualizeBestInd(Individual i, int g){
+    public void vizualizeBestInd(AbstractIndividual i, int g){
 
         i.printToViz(windows);
 
@@ -21,7 +22,7 @@ public class Vizual extends JFrame {
 
     }
 
-    public void printBestEver(Individual i, int g){
+    public void printBestEver(AbstractIndividual i, int g){
 
         bestEver.setText(g + " " + i.fitness );
     }

@@ -12,7 +12,7 @@ public abstract class Island {
 
     int bestScore = -1000000000;
 
-    public Individual bestInd;
+    public AbstractIndividual bestInd;
 
     public abstract void optimise(int g);
 
