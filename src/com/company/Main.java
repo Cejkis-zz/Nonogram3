@@ -41,7 +41,7 @@ public class Main {
         System.out.print(i + "");
 
         if (policka.size() + 1 != Mezery.size()) {
-            System.out.println("*alert policek a mezer" + policka.size() + "," + Mezery.size());
+            System.out.println("*alert policek gga mezer" + policka.size() + "," + Mezery.size());
         }
 
         for (int j = 0; j < Mezery.get(0); j++) {
