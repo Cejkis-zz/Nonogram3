@@ -1,385 +1,376 @@
 package com.company;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Scanner;
+import jcuda.Sizeof;
+import jcuda.driver.*;
+
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+import static jcuda.driver.JCudaDriver.*;
 
 public class Main {
 
-    static ArrayList<ArrayList<Integer>> horniLegenda;
-
-    static ArrayList<ArrayList<Integer>> levaLegenda;
-    static ArrayList<ArrayList<Integer>> velikostiMezer;
-
-    static HashSet<Integer> Tabu = new HashSet<>();
-
-    static Integer ZmenenyRadek = 0;
-    static ArrayList<Integer> lepsiMezery;
-
-    static boolean[][] tajenka;
-
-    static int vyska = 5;
-    static int sirka = 5;
-    static int soucasnyFitness;
-    static int nejnizsifitness;
-    static int fitnessKandidata;
-
-    public static void printPole() {
-
-        for (int i = 0; i < vyska; i++) {
-            printRadek(i, velikostiMezer.get(i));
-        }
-    }
-
-
-    public static void printRadek(int i, ArrayList<Integer> Mezery) {
-
-        ArrayList<Integer> policka = levaLegenda.get(i);
-        System.out.print(i + "");
-
-        if (policka.size() + 1 != Mezery.size()) {
-            System.out.println("*alert policek gga mezer" + policka.size() + "," + Mezery.size());
-        }
-
-        for (int j = 0; j < Mezery.get(0); j++) {
-            System.out.print("  ");
-        }
-
-        for (int j = 0; j < policka.size(); j++) {
-
-            // vytisknu jedno policko
-            for (int k = 0; k < policka.get(j); k++) {
-                System.out.print("##");
-            }
-
-            for (int k = 0; k < Mezery.get(j + 1); k++) {
-                System.out.print("  ");
-            }
-        }
-
-        System.out.print("|");
-        System.out.println();
-    }
-
-    public static void initializeVariables() {
-
-        sirka = horniLegenda.size();
-        vyska = levaLegenda.size();
-        tajenka = new boolean[vyska][sirka];
-        velikostiMezer = new ArrayList<>(vyska);
-
-        for (int i = 0; i < vyska; i++) {
-            velikostiMezer.add(new ArrayList<Integer>());
-        }
-    }
-
-    // Vyplni mezery, mezery 1 a vycentrovana doprostred
-    public static void vytvorMezery() {
-
-        ArrayList<Integer> VelikostiPoli;
-        ArrayList<Integer> Mezery;
-        int velikost;
-
-        for (int i = 0; i < vyska; i++) { // i je radek
-
-            VelikostiPoli = levaLegenda.get(i);
-            Mezery = velikostiMezer.get(i);
-
-            if (VelikostiPoli.isEmpty()) { // nebo 1? Nejspis nikdy nenastane
-                Mezery.add(sirka);
-            } else {
-                velikost = 0;
-
-                for (Integer aVelikostiPoli : VelikostiPoli) { //j je poradi cisla v radku
-                    velikost += aVelikostiPoli;
-                }
-
-                velikost += VelikostiPoli.size() - 1;
-                double zbytek = sirka - velikost;
-                Mezery.add((int) Math.ceil(zbytek / 2));
-
-                for (int j = 0; j < VelikostiPoli.size() - 1; j++) {
-                    Mezery.add(1);
-                }
-                Mezery.add((int) Math.floor(zbytek / 2));
-            }
-            if (VelikostiPoli.size() + 1 != Mezery.size()) {
-
-                System.out.println("ALERT policek a mezer" + VelikostiPoli.size() + "," + Mezery.size());
-            }
-        }
-
-    }
-
-    public static void vyplnCelouTajenkuPodleLegendyAMezer() {
-
-        for (int i = 0; i < vyska; i++) { // i je radek
-            VyplnRadekTajenky(i, velikostiMezer.get(i));
-        }
-    }
-
-    public static void VyplnRadekTajenky(int radek, ArrayList<Integer> mezeryVRadku) {
-
-        ArrayList<Integer> polickaVRadku = levaLegenda.get(radek);
-
-        int pointer = 0; // ukazatel na pozici, kterou menim
-
-        for (int j = 0; j < mezeryVRadku.get(0); j++) { // prvni mezera
-            tajenka[radek][pointer] = false;
-            pointer++;
-        }
-
-        for (int j = 0; j < polickaVRadku.size(); j++) { // pro vsehna policka
-
-            for (int k = 0; k < polickaVRadku.get(j); k++) {
-                tajenka[radek][pointer] = true;
-                pointer++;
-            }
-            //   System.out.println("*" + radek + "*" + mezeryVRadku.get(j + 1));
-
-            for (int k = 0; k < mezeryVRadku.get(j + 1); k++) {
-                tajenka[radek][pointer] = false;
-                pointer++;
-            }
-        }
-
-    }
-
-    // podle tajenky a legendy spocte needlemana pro jeden radek/sloupec
-    public static int needlemanWunch(ArrayList<Integer> legenda, ArrayList<Integer> tajenka) {
-
-        ArrayList<Integer> x = new ArrayList<>(legenda);
-        ArrayList<Integer> y = new ArrayList<>(tajenka);
-
-        x.add(0, 0);
-        y.add(0, 0);
-
-        int[][] H = new int[y.size()][x.size()];
-
-        H[0][0] = 0;
-
-        for (int i = 1; i < y.size(); i++) {
-            H[i][0] = H[i - 1][0] - y.get(i);
-        }
-
-        for (int i = 1; i < x.size(); i++) {
-            H[0][i] = H[0][i - 1] - x.get(i);
-        }
-
-        for (int j = 1; j < x.size(); j++) {
-            for (int i = 1; i < y.size(); i++) {
-
-                H[i][j] = Math.max(H[i - 1][j] - y.get(i),
-                        Math.max(H[i][j - 1] - x.get(j),
-                                H[i - 1][j - 1] - Math.abs(x.get(j) - y.get(i))));
-
-            }
-        }
-
-        return H[y.size() - 1][x.size() - 1];
-    }
-
-    // vraci sloupec tajenky ve jako ve "sloucenem" tvaru
-    public static ArrayList<Integer> arraylistFromPole(int sloupec) {
-
-        ArrayList<Integer> a = new ArrayList<>();
-        int kombo = 0;
-
-        for (int i = 0; i < vyska; i++) {
-            if (tajenka[i][sloupec]) {
-                kombo++;
-            } else {
-                if (kombo != 0) {
-                    a.add(kombo);
-                }
-                kombo = 0;
-            }
-        }
-
-        if (kombo != 0) {
-            a.add(kombo);
-        }
-
-        return a;
-    }
-
-    // spocte sumu needlemanu vsech sloupcu
-    public static int spoctiFitness() {
-        int suma = 0;
-
-        
-
-        for (int i = 0; i < sirka; i++) {
-            suma += needlemanWunch(horniLegenda.get(i), arraylistFromPole(i));
-        }
-        return suma;
-    }
-
-    // vypise na sout hodnoty needlemana pro kazdy sloupec
-    //  public static void vypisNeedlemanaProSloupce() {
-    //    for (int i = 0; i < horniLegenda.size(); i++) {
-    //   System.out.println("needleman " + i + ": " + needlemanWunch(horniLegenda.get(i), arraylistFromPole(i)));
-    //   }
-    // }
-
-    public static void prehazimMezery(int radek, ArrayList<Integer> IndexyMezerKtereMuzuUbrat) {
-
-        ArrayList<Integer> noveMezery = velikostiMezer.get(radek);
-
-
-        for (int i = 0; i < IndexyMezerKtereMuzuUbrat.size(); i++) { // IndexyMezerKtereMuzuUbrat obsahuje indexy mezer, ktere muzu ubrat
-            for (int j = 0; j < noveMezery.size(); j++) { // velikosti mezer
-                if (IndexyMezerKtereMuzuUbrat.get(i) == j) {
-                    continue;
-                }
-
-                // zmen mezery
-                int indexZeKterehoUbiram = IndexyMezerKtereMuzuUbrat.get(i);
-                noveMezery.set(indexZeKterehoUbiram, noveMezery.get(indexZeKterehoUbiram) - 1);
-                noveMezery.set(j, noveMezery.get(j) + 1);
-
-                // uprav radek v tajence
-                VyplnRadekTajenky(radek, noveMezery);
-
-                // otestuj
-                fitnessKandidata = spoctiFitness();
-
-                if (fitnessKandidata >= nejnizsifitness) {
-
-                    if (Tabu.contains(velikostiMezer.hashCode())) { // tuto moznost uz jsem zkusil
-                        System.out.println("*Narazil jsem na hash kolizi*");
-                    } else {
-                        nejnizsifitness = fitnessKandidata;
-                        ZmenenyRadek = radek;
-                        lepsiMezery = (ArrayList<Integer>) noveMezery.clone();
-                    }
-                }
-
-                //vrat co jsi zmenil
-                noveMezery.set(indexZeKterehoUbiram, noveMezery.get(indexZeKterehoUbiram) + 1);
-                noveMezery.set(j, noveMezery.get(j) - 1);
-                VyplnRadekTajenky(radek, noveMezery);
-
-            }
-        }
-    }
-
-    public static void main(String[] args) {
-
-        horniLegenda = new ArrayList<>(sirka);
-        levaLegenda = new ArrayList<>(vyska);
-
-        Scanner in = null;
-        Scanner radeksc = null;
-
-        try {
-            in = new Scanner(new FileReader("25x20.txt"));
-        } catch (FileNotFoundException ex) {
-            System.out.println("Nemuzu najit soubor 7x8.txt");
-        }
-
-        String radek = in.nextLine(); //"radky"
-
-        ArrayList<Integer> novyRadek;
+    // main controls
+    static boolean VIZ = false;
+    static boolean CROWDING = false;
+    static boolean BINARYINDIVIDUAL = false;
+    static boolean GPU = false;
+    static String input = "inputs/40x40.txt"; // 10x13 25x20 40x30
+
+    static int GENERATIONS = 10000;
+    static int height, width, gridSize;
+
+    // references to kernels
+    static CUmodule optimisePopulationModule;
+    static CUmodule updatePopulationModule;
+
+    // references to kernel functions
+    static CUfunction createChildrenFunction = new CUfunction();
+    static CUfunction updatePopulationFunction = new CUfunction();
+    static CUfunction fitnessOfAllColumnsFunction = new CUfunction();
+    static CUfunction fitnessOfAllRowsFunction = new CUfunction();
+    static CUfunction evolutionFunction = new CUfunction();
+
+    // input arrays
+    static ArrayList<ArrayList<Integer>> leftLegendAL;
+    static ArrayList<ArrayList<Integer>> upperLegendAL;
+
+    static int[][] upperLegend;
+    static int[] upperLegend1D;
+    static int[] shiftsOfUpperLegend;
+    static int[] sizesOfUpperLegend;
+
+    static int[][] leftLegend;
+    static int[] leftLegend1D;
+    static int[] shiftsOfLeftLegend;
+    static int[] sizesOfLeftLegend;
+
+    // parses input to legends
+    static void readInput(Scanner in) {
+
+        Scanner rowScanner;
+
+        // Left legend
+        String row = in.nextLine();
+
+        leftLegendAL = new ArrayList<>();
+        ArrayList<Integer> newRow;
+
+        int legendSize = 0;
+        int max = 0;
 
         while (true) {
-            radek = in.nextLine();
+            row = in.nextLine();
 
-            if (radek.startsWith("sloupce")) break;
-
-            novyRadek = new ArrayList<Integer>();
-
-            radeksc = new Scanner(radek);
-
-            while (radeksc.hasNextInt()) {
-                novyRadek.add(radeksc.nextInt());
+            if (row.length() == 0) {
+                row = in.nextLine();
+                break;
             }
-            levaLegenda.add(novyRadek);
+
+            newRow = new ArrayList<>();
+            rowScanner = new Scanner(row);
+
+            while (rowScanner.hasNextInt()) {
+                newRow.add(rowScanner.nextInt());
+                legendSize++;
+            }
+            newRow.add(0, 0); // first element is zero for needlemanWunschOptimized wunsch
+            legendSize++;
+            leftLegendAL.add(newRow);
+            if (max < newRow.size()) max = newRow.size();
         }
+
+        sizesOfLeftLegend = new int[leftLegendAL.size()];
+        leftLegend1D = new int[legendSize];
+        shiftsOfLeftLegend = new int[leftLegendAL.size()];
+        shiftsOfLeftLegend[0] = 0;
+        leftLegend = new int[leftLegendAL.size()][max];
+
+        for (int i = 0; i < leftLegendAL.size(); i++) {
+            sizesOfLeftLegend[i] = leftLegendAL.get(i).size();
+            if (0 < i)
+                shiftsOfLeftLegend[i] = shiftsOfLeftLegend[i - 1] + sizesOfLeftLegend[i - 1];
+
+            for (int j = 0; j < leftLegendAL.get(i).size(); j++) {
+                Main.leftLegend[i][j] = leftLegendAL.get(i).get(j);
+                leftLegend1D[shiftsOfLeftLegend[i] + j] = Main.leftLegend[i][j];
+            }
+            leftLegendAL.get(i).remove(0);
+        }
+
+        ////////////////////// upper legend
+
+        upperLegendAL = new ArrayList<>();
+
+        max = 0;
+        legendSize = 0;
 
         while (in.hasNext()) {
-            radek = in.nextLine();
-            novyRadek = new ArrayList<Integer>();
+            row = in.nextLine();
 
-            radeksc = new Scanner(radek);
-            while (radeksc.hasNextInt()) {
-                novyRadek.add(0, radeksc.nextInt());
+            newRow = new ArrayList<>();
+            rowScanner = new Scanner(row);
+
+            while (rowScanner.hasNextInt()) {
+                newRow.add(0, rowScanner.nextInt());
+                legendSize++;
             }
-            horniLegenda.add(novyRadek);
+            newRow.add(0, 0); // first element is zero for needlemanWunschOptimized wunsch
+            legendSize++;
+            upperLegendAL.add(newRow);
+            if (max < newRow.size()) max = newRow.size();
         }
 
-        initializeVariables();
-        vytvorMezery();
+        sizesOfUpperLegend = new int[upperLegendAL.size()];
+        upperLegend1D = new int[legendSize];
+        shiftsOfUpperLegend = new int[upperLegendAL.size()];
+        shiftsOfUpperLegend[0] = 0;
+        upperLegend = new int[upperLegendAL.size()][max];
 
-        vyplnCelouTajenkuPodleLegendyAMezer();
+        for (int i = 0; i < upperLegendAL.size(); i++) {
+            sizesOfUpperLegend[i] = upperLegendAL.get(i).size();
+            if (0 < i)
+                shiftsOfUpperLegend[i] = shiftsOfUpperLegend[i - 1] + sizesOfUpperLegend[i - 1];
 
-        soucasnyFitness = spoctiFitness();
-        System.out.println("soucasny fitness:" + soucasnyFitness);
-        nejnizsifitness = soucasnyFitness;
-
-        ArrayList<Integer> MuzuUbrat = new ArrayList<>();
-
-        // opakovani optimalizace
-        for (int p = 0; p < 300; p++) {
-            //  System.out.println("");
-            //System.out.println(p + 1 + ". KOLO");
-            //printPole();
-            nejnizsifitness = Integer.MIN_VALUE;
-
-            for (int i = 0; i < vyska; i++) { // radek po radku
-
-                ArrayList<Integer> mezeryVAktualnimRadku = velikostiMezer.get(i);
-
-                //radek nema policka, nema smysl nic prekladavat
-                if (mezeryVAktualnimRadku.isEmpty()) {
-                    continue;
-                }
-
-                MuzuUbrat.clear();
-
-                // prvni mezera
-                if (mezeryVAktualnimRadku.get(0) > 0) {
-                    MuzuUbrat.add(0);
-                }
-
-                // posledni mezera
-                if (mezeryVAktualnimRadku.size() > 1 && mezeryVAktualnimRadku.get(mezeryVAktualnimRadku.size() - 1) > 0) {
-                    MuzuUbrat.add(mezeryVAktualnimRadku.size() - 1);
-                }
-
-                // uvnitr radku najdu mista na vkladani a vybirani
-                for (int j = 1; j < mezeryVAktualnimRadku.size() - 1; j++) {
-
-                    if (mezeryVAktualnimRadku.get(j) > 1) {
-                        MuzuUbrat.add(j);
-                    }
-                }
-                prehazimMezery(i, MuzuUbrat);
+            for (int j = 0; j < upperLegendAL.get(i).size(); j++) {
+                upperLegend[i][j] = upperLegendAL.get(i).get(j);
+                upperLegend1D[shiftsOfUpperLegend[i] + j] = upperLegend[i][j];
             }
-
-            if (nejnizsifitness >= soucasnyFitness) {
-
-                velikostiMezer.set(ZmenenyRadek, lepsiMezery);
-                soucasnyFitness = nejnizsifitness;
-
-                Tabu.add(velikostiMezer.hashCode());
-
-                System.out.println();
-                System.out.println("zlepsuju moje pole" + nejnizsifitness + " zmena v radku " + ZmenenyRadek);
-                printRadek(ZmenenyRadek,velikostiMezer.get(ZmenenyRadek));
-                //   printPole();
-
-                if (soucasnyFitness == 0) {
-                    System.out.println("MAM SPRAVNY NONOGRAM!!!");
-                    break;
-                }
-
-            }
-
+            upperLegendAL.get(i).remove(0);
         }
-        printPole();
+
+        //
+        width = upperLegend.length;
+        height = leftLegend.length;
+        gridSize = width * height;
     }
+
+    // initializes constant memory of name in module and sets its value to array
+    private static void initConstantMemory(CUmodule module, String name, int[] array) {
+        long sizeArray[] = {0};
+        CUdeviceptr pointer = new CUdeviceptr();
+        cuModuleGetGlobal(pointer, sizeArray, module, name);
+        cuMemcpyHtoD(pointer, pointer.to(array), array.length * Sizeof.INT);
+    }
+
+    // source: https://stackoverflow.com/questions/25242889/error-while-compiling-jcuda-sample-from-sdk-in-eclipse-input-file-not-found-jc
+    public static void setupGPU() throws IOException {
+
+        // Enable exceptions and omit all subsequent error checks
+        JCudaDriver.setExceptionsEnabled(true);
+
+        // Create the PTX file by calling the NVCC
+        String ptxFileName = preparePtxFile("kernels.cu");
+
+        // Create the PTX file by calling the NVCC
+        String ptxFileNameUpdate = preparePtxFile("update.cu");
+
+        // Initialize the driver and create a context for the first device.
+        cuInit(0);
+        CUdevice device = new CUdevice();
+        cuDeviceGet(device, 0);
+        CUcontext context = new CUcontext();
+        cuCtxCreate(context, 0, device);
+
+        // Load the ptx file.
+        optimisePopulationModule = new CUmodule();
+        cuModuleLoad(optimisePopulationModule, ptxFileName);
+
+        // Load the ptx file.
+        updatePopulationModule = new CUmodule();
+        cuModuleLoad(updatePopulationModule, ptxFileNameUpdate);
+
+        // load functions
+        cuModuleGetFunction(createChildrenFunction, optimisePopulationModule, "createChildren");
+        cuModuleGetFunction(updatePopulationFunction, updatePopulationModule, "updatePopulation");
+
+        cuModuleGetFunction(fitnessOfAllColumnsFunction, optimisePopulationModule, "countFitnessOfAllColumns");
+        cuModuleGetFunction(fitnessOfAllRowsFunction, optimisePopulationModule, "countFitnessOfAllRows");
+
+        cuModuleGetFunction(evolutionFunction, optimisePopulationModule, "evolution");
+
+        // load constant memories
+        initConstantMemory(optimisePopulationModule, "legendU", upperLegend1D);
+        initConstantMemory(optimisePopulationModule, "sizesOfLegendsU", sizesOfUpperLegend);
+        initConstantMemory(optimisePopulationModule, "shiftsOfLegendsU", shiftsOfUpperLegend);
+        initConstantMemory(optimisePopulationModule, "legendL", leftLegend1D);
+        initConstantMemory(optimisePopulationModule, "sizesOfLegendsL", sizesOfLeftLegend);
+        initConstantMemory(optimisePopulationModule, "shiftsOfLegendsL", shiftsOfLeftLegend);
+        initConstantMemory(optimisePopulationModule, "heightWidth", new int[]{height, width, gridSize, Island.popSize});
+        initConstantMemory(updatePopulationModule, "heightWidth", new int[]{height, width, gridSize, Island.popSize});
+    }
+
+    public static Scanner readArgs(String[] args){
+        Scanner inputScanner = null;
+
+        for (String arg: args) {
+
+            if (arg.equals("par")){ // parallel computation of individual
+                GPU = true;
+                GPUCrowdingIsland.fitnessSingleThread = false;
+                continue;
+            }
+
+            if (arg.equals("ser")){ // serial computation of individual
+                GPU = true;
+                GPUCrowdingIsland.fitnessSingleThread = true;
+                continue;
+            }
+
+            if (arg.equals("viz")){ // serial computation of individual
+                VIZ = true;
+                continue;
+            }
+
+            if (arg.equals("bin")){ // serial computation of individual
+                BINARYINDIVIDUAL = true;
+                continue;
+            }
+
+            if (arg.equals("dc")){ // serial computation of individual
+                CROWDING = true;
+                continue;
+            }
+
+            try {
+                int number = Integer.parseInt(arg);
+
+                if (number < 50){
+                    GPUCrowdingIsland.nrSMX = number;
+                }else{
+                    GENERATIONS = number;
+                }
+
+            } catch (NumberFormatException e) {
+                try {
+                    inputScanner = new Scanner(new FileReader(arg));
+                } catch (FileNotFoundException ex) {
+                    System.err.println("Use argument \"cpu\",\"par\" or \"ser\". Use integer to set number of SMs. Your argument:" + arg + " was used as filename and no file was found.");
+                    System.exit(1);
+                }
+            }
+        }
+
+        if (inputScanner == null){
+            System.err.println("Please specify input location.");
+            System.exit(1);
+        }
+
+        return inputScanner;
+    }
+
+    public static void main(String[] args) throws IOException {
+
+        Scanner s =readArgs(args);
+        readInput(s);
+        // readInput(new Scanner(new FileReader(input)));
+
+        if (GPU)
+            setupGPU();
+
+        Island is;
+
+        if (CROWDING){
+            if (GPU)
+             is = new GPUCrowdingIsland();
+            else
+             is = new CPUCrowdingIsland();
+        }else
+            is = new ClassicIsland();
+
+        System.out.println("START" + new SimpleDateFormat("HH:mm:ss").format(new Date()));
+
+        for (int g = 0; g < GENERATIONS; g++) {
+
+            if (g % 1 == 0) {
+                System.out.print(g + ". generation " +new SimpleDateFormat("HH:mm:ss ").format(new Date()));
+                is.printStatistics();
+            }
+
+            is.optimise(g);
+        }
+    }
+
+
+    /**
+     * The extension of the given file name is replaced with "ptx".
+     * If the file with the resulting name does not exist, it is
+     * compiled from the given file using NVCC. The name of the
+     * PTX file is returned.
+     *
+     * @param cuFileName The name of the .CU file
+     * @return The name of the PTX file
+     * @throws IOException If an I/O error occurs
+     */
+    private static String preparePtxFile(String cuFileName) throws IOException {
+        int endIndex = cuFileName.lastIndexOf('.');
+        if (endIndex == -1) {
+            endIndex = cuFileName.length() - 1;
+        }
+        String ptxFileName = cuFileName.substring(0, endIndex + 1) + "ptx";
+        File ptxFile = new File(ptxFileName);
+        if (ptxFile.exists()) {
+            return ptxFileName;
+        }
+
+        File cuFile = new File(cuFileName);
+        if (!cuFile.exists()) {
+            throw new IOException("Input file not found: " + cuFileName);
+        }
+        String modelString = "-m" + System.getProperty("sun.arch.data.model");
+        String command =
+                "nvcc " + modelString + " -ptx " +
+                        cuFile.getPath() + " -o " + ptxFileName;
+
+        System.out.println("Executing\n" + command);
+        Process process = Runtime.getRuntime().exec(command);
+
+        String errorMessage =
+                new String(toByteArray(process.getErrorStream()));
+        String outputMessage =
+                new String(toByteArray(process.getInputStream()));
+        int exitValue = 0;
+        try {
+            exitValue = process.waitFor();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException(
+                    "Interrupted while waiting for nvcc output", e);
+        }
+
+        if (exitValue != 0) {
+            System.out.println("nvcc process exitValue " + exitValue);
+            System.out.println("errorMessage:\n" + errorMessage);
+            System.out.println("outputMessage:\n" + outputMessage);
+            throw new IOException(
+                    "Could not create .ptx file: " + errorMessage);
+        }
+
+        System.out.println("Finished creating PTX file");
+        return ptxFileName;
+    }
+
+    /**
+     * Fully reads the given InputStream and returns it as a byte array
+     *
+     * @param inputStream The input stream to read
+     * @return The byte array containing the data from the input stream
+     * @throws IOException If an I/O error occurs
+     */
+    private static byte[] toByteArray(InputStream inputStream)
+            throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte buffer[] = new byte[8192];
+        while (true) {
+            int read = inputStream.read(buffer);
+            if (read == -1) {
+                break;
+            }
+            baos.write(buffer, 0, read);
+        }
+        return baos.toByteArray();
+    }
+
+
 }
