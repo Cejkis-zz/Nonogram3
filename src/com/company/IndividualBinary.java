@@ -15,7 +15,8 @@ import static jcuda.driver.JCudaDriver.*;
  * Created by cejkis on 8.11.15.
  */
 
-public class IndividualBinary extends Individual {
+// Individual represented by binary 2D array
+public class IndividualBinary extends AbstractIndividual {
 
     int[] grid;
 
@@ -32,7 +33,7 @@ public class IndividualBinary extends Individual {
         genOfBirth = g;
     }
 
-//    public Individual(Individual s){
+//    public AbstractIndividual(AbstractIndividual s){
 //
 //        grid = new int[gridSize];
 //
@@ -52,7 +53,7 @@ public class IndividualBinary extends Individual {
     }
 
     @Override
-    public Individual cross(Individual b, int gen) {
+    public AbstractIndividual cross(AbstractIndividual b, int gen) {
 
         IndividualBinary c = new IndividualBinary(gen);
         IndividualBinary bb = (IndividualBinary)(b);
@@ -67,7 +68,7 @@ public class IndividualBinary extends Individual {
         return c;
     }
 
-    public int difference(Individual j) {
+    public int difference(AbstractIndividual j) {
 
         IndividualBinary ii = (IndividualBinary) j;
         int diff = 0;
@@ -221,7 +222,7 @@ public class IndividualBinary extends Individual {
     }
 
 
-//    public Individual localOptimalization(int numberOfOptimalization){
+//    public AbstractIndividual localOptimalization(int numberOfOptimalization){
 //
 //        bestFitnessEver = fitness;
 //       // fitnessKandidata = fitness;
@@ -230,7 +231,7 @@ public class IndividualBinary extends Individual {
 //        if(bestFitnessEver  >= -26 ) tolerance = 2;
 //        if(bestFitnessEver  >= -2 ) tolerance = 0;
 //
-//        Individual nejlepsi = new Individual(this);
+//        AbstractIndividual nejlepsi = new AbstractIndividual(this);
 //
 //        // opakovani optimalizace
 //        for (int p = 0; p < numberOfOptimalization; p++) {
@@ -240,7 +241,7 @@ public class IndividualBinary extends Individual {
 //            if ( fitness >= bestFitnessEver - tolerance) {
 //
 //                if(fitness >= nejlepsi.fitness  ){
-//                    nejlepsi = new Individual(this);
+//                    nejlepsi = new AbstractIndividual(this);
 //                }
 //
 //                if(bestFitnessEver  >= -60 ) tolerance = 4;

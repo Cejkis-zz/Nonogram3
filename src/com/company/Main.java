@@ -264,7 +264,7 @@ public class Main {
 
         Scanner s =readArgs(args);
         readInput(s);
-        // readInput(new Scanner(new FileReader(input)));
+        // readInput(new Scanner(new FileReader(input))); // no command line arguments
 
         if (GPU)
             setupGPU();

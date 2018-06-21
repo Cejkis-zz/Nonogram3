@@ -11,7 +11,7 @@ import static com.company.Main.*;
  */
 public class ClassicIsland extends Island{
 
-    public ArrayList<Individual> population;
+    public ArrayList<AbstractIndividual> population;
 
     private Vizual frame;
 
@@ -19,11 +19,11 @@ public class ClassicIsland extends Island{
         if (Main.VIZ)
             frame = new Vizual(width, Main.height);
 
-        population = new ArrayList<Individual>() ;
+        population = new ArrayList<AbstractIndividual>() ;
 
         for (int i = 0; i < popSize; i++) {
 
-            Individual j;
+            AbstractIndividual j;
 
             if (Main.BINARYINDIVIDUAL){ // TODO should be factory
                 j = new IndividualBinary(0);
@@ -77,12 +77,12 @@ public class ClassicIsland extends Island{
         }
 
         // select parents and create children
-        ArrayList<Individual> rodiceAsArray = new ArrayList<>(selectParents(population));
-        ArrayList<Individual> offspring = new ArrayList<>();
+        ArrayList<AbstractIndividual> rodiceAsArray = new ArrayList<>(selectParents(population));
+        ArrayList<AbstractIndividual> offspring = new ArrayList<>();
 
         for (int i = 0; i < numberChildren; i++) {
-            Individual p1 = rodiceAsArray.get((int) (Math.random() * selectionSize));
-            Individual p2 = rodiceAsArray.get((int) (Math.random() * selectionSize));
+            AbstractIndividual p1 = rodiceAsArray.get((int) (Math.random() * selectionSize));
+            AbstractIndividual p2 = rodiceAsArray.get((int) (Math.random() * selectionSize));
             offspring.add(p1.cross(p2, g));
         }
 
@@ -93,7 +93,7 @@ public class ClassicIsland extends Island{
         }
 
         // mutate children
-        for (Individual dite : offspring) {
+        for (AbstractIndividual dite : offspring) {
             if (Math.random() < probChildMutation) {
                 dite.mutate();
             }
@@ -101,7 +101,7 @@ public class ClassicIsland extends Island{
         }
 
         // randomly mutate old population and merge with children
-        for (Individual i : population) {
+        for (AbstractIndividual i : population) {
 
             if (i == bestInd) continue;
 
@@ -147,7 +147,7 @@ public class ClassicIsland extends Island{
 
         int sum = 0;
 
-        for (Individual i : population) {
+        for (AbstractIndividual i : population) {
             //System.out.print(i.fitness + " ");
 
             sum += i.fitness;
@@ -162,14 +162,14 @@ public class ClassicIsland extends Island{
 
     }
 
-    public static Set<Individual> selectParents(ArrayList<Individual> population) {
+    public static Set<AbstractIndividual> selectParents(ArrayList<AbstractIndividual> population) {
 
-        Set<Individual> parents = new HashSet<>();
+        Set<AbstractIndividual> parents = new HashSet<>();
 
         while (parents.size() != selectionSize) {
 
-            Individual a = population.get((int) (Math.random() * population.size()));
-            Individual b = population.get((int) (Math.random() * population.size()));
+            AbstractIndividual a = population.get((int) (Math.random() * population.size()));
+            AbstractIndividual b = population.get((int) (Math.random() * population.size()));
 
             if (a.fitness > b.fitness)
                 parents.add(a);
